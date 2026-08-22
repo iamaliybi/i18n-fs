@@ -1,0 +1,28 @@
+# Rust
+/target
+**/target
+Cargo.lock.bak
+
+# Node
+node_modules/
+dist/
+.turbo/
+*.tsbuildinfo
+
+# WASM build output
+crates/i18n-fs-wasm/pkg/
+packages/i18n-fs/wasm/
+
+# Generated i18n artifacts
+.i18n-fs/
+
+# Editors / OS
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/*
+!.vscode/extensions.json
+
+# Env
+.env
+.env.local

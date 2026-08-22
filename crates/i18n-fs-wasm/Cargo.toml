@@ -1,0 +1,49 @@
+[package]
+name = "i18n-fs-wasm"
+description = "WebAssembly bindings for i18n-fs-core."
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+authors.workspace = true
+
+[lib]
+crate-type = ["cdylib", "rlib"]
+
+[features]
+# Mirrors i18n-fs-core. The `edge` build compiles with --no-default-features.
+default = ["full"]
+full = ["i18n-fs-core/full", "diagnostics"]
+diagnostics = ["i18n-fs-core/diagnostics"]
+
+[dependencies]
+i18n-fs-core = { path = "../i18n-fs-core", default-features = false }
+wasm-bindgen = "0.2"
+serde = { workspace = true }
+serde-wasm-bindgen = "0.6"
+
+[dev-dependencies]
+wasm-bindgen-test = "0.3"
+
+[lints.rust]
+missing_docs = "warn"
+unsafe_code = "forbid"
+
+[lints.clippy]
+all = { level = "deny", priority = -1 }
+
+# rustc emits the WASM 2.0 baseline (sign-ext, bulk-memory,
+# nontrapping-float-to-int, ...) by default, but the wasm-opt that wasm-pack
+# ships predates it and rejects those instructions. Enable them explicitly
+# rather than turning size optimisation off.
+[package.metadata.wasm-pack.profile.release]
+wasm-opt = [
+    "-Oz",
+    "--enable-sign-ext",
+    "--enable-mutable-globals",
+    "--enable-nontrapping-float-to-int",
+    "--enable-bulk-memory",
+    "--enable-multivalue",
+    "--enable-reference-types",
+]

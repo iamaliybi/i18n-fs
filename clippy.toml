@@ -1,0 +1,2 @@
+# Keep the Edge bundle honest: flag anything that silently pulls in heavy machinery.
+avoid-breaking-exported-api = false

@@ -1,0 +1,8 @@
+packages:
+  - "packages/*"
+  - "examples/*"
+
+# esbuild (pulled in by tsup and vitest) fetches its platform binary in a
+# postinstall script. Approved here so CI installs never wait on a prompt.
+allowBuilds:
+  esbuild: true
