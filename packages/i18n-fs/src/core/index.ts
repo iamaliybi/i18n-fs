@@ -12,6 +12,7 @@
  */
 
 import { CAPABILITY, loadBindings } from '#core-bindings';
+import { VERSION } from '../version.js';
 import type { CliCore, EdgeCore, FullCore } from './types.js';
 
 let pending: Promise<EdgeCore> | undefined;
@@ -24,8 +25,34 @@ let pendingFull: Promise<FullCore> | undefined;
  * exist everywhere. Use {@link loadFullCore} where message handling is needed.
  */
 export function loadCore(): Promise<EdgeCore> {
-	pending ??= loadBindings();
+	pending ??= loadBindings().then(assertVersionsAgree);
 	return pending;
+}
+
+/**
+ * Refuse a binary built for a different version of this package.
+ *
+ * The two halves encode the same decisions — route canonicalisation, key
+ * resolution, message parsing — and a `wasm/` directory left over from an
+ * earlier version would apply the old ones while the JavaScript applies the
+ * new. That produces wrong output rather than an error, which is the worst
+ * shape a bug can take, so it is worth failing the load over.
+ *
+ * This cannot happen in a published package: both halves are built together.
+ * It happens in development, when one side is rebuilt and the other is not.
+ */
+function assertVersionsAgree(core: EdgeCore): EdgeCore {
+	const compiled = core.coreVersion();
+
+	if (compiled !== VERSION) {
+		throw new Error(
+			`[i18n-fs] The compiled core is version ${compiled} but the package is ${VERSION}. ` +
+				'The two encode the same routing and resolution rules, so a mismatch would ' +
+				'silently produce wrong output. Run `pnpm bootstrap` to rebuild both.',
+		);
+	}
+
+	return core;
 }
 
 /**

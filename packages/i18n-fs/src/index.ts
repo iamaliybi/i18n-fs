@@ -15,6 +15,8 @@
 
 export { loadCore, loadFullCore, hasMessageSupport } from './core/index.js';
 
+export { VERSION } from './version.js';
+
 export type {
 	Action,
 	ConfigIssue,

@@ -49,6 +49,10 @@ pub use store::{Entry, LeafKind};
 #[cfg(feature = "full")]
 pub use store::{Leaf, MessageStore, Resolved};
 
-/// Version of the core, surfaced through WASM so the JS layer can assert that
-/// the loaded binary matches the package it shipped with.
-pub const VERSION: &str = env!("CARGO_PKG_VERSION");
+/// Version of this crate.
+///
+/// Not the version of the npm package — the crates in this workspace are never
+/// published to crates.io and stay at `0.0.0`. What the JavaScript layer checks
+/// against is stamped into the WASM crate at build time instead; see
+/// `i18n-fs-wasm`.
+pub const CRATE_VERSION: &str = env!("CARGO_PKG_VERSION");

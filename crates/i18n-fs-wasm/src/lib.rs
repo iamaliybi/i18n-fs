@@ -19,11 +19,21 @@ use i18n_fs_core::config::I18nConfig;
 use i18n_fs_core::routing::RequestInfo;
 use wasm_bindgen::prelude::*;
 
-/// Version of the compiled core. The JS loader asserts this matches the package
-/// version, so a stale `pkg/` directory fails loudly instead of subtly.
+/// Version of the npm package this binary was built for.
+///
+/// Stamped in by `scripts/build-wasm.mjs`, which reads it from the package's
+/// own `package.json`. It falls back to the crate version only when the crate
+/// is built outside that script — which means a plain `cargo build`, never a
+/// published artefact.
+///
+/// The JavaScript loader compares this against the version compiled into the
+/// JavaScript, so a `wasm/` directory left over from an earlier version fails
+/// on load rather than resolving messages with mismatched logic.
 #[wasm_bindgen(js_name = coreVersion)]
 pub fn core_version() -> String {
-	i18n_fs_core::VERSION.to_owned()
+	option_env!("I18N_FS_VERSION")
+		.unwrap_or(i18n_fs_core::CRATE_VERSION)
+		.to_owned()
 }
 
 fn to_js_error(error: impl core::fmt::Display) -> JsValue {
