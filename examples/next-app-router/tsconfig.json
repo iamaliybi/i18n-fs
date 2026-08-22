@@ -1,0 +1,12 @@
+{
+	"extends": "../../tsconfig.base.json",
+	"compilerOptions": {
+		"noEmit": true,
+		"jsx": "preserve",
+		"plugins": [{ "name": "next" }],
+		"allowJs": true,
+		"incremental": true
+	},
+	"include": ["**/*.ts", "**/*.tsx", "**/*.mjs", ".next/types/**/*.ts"],
+	"exclude": ["node_modules", ".next"]
+}

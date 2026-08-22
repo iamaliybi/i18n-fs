@@ -25,7 +25,12 @@ const crate = join(root, 'crates', 'i18n-fs-wasm');
 const BUILDS = [
 	{
 		name: 'edge',
-		target: 'bundler',
+		// `web`, not `bundler`. The bundler glue resolves its `.wasm` at runtime
+		// through a relative URL, and the Edge runtime has no base to resolve it
+		// against — the middleware then throws "Failed to parse URL from
+		// /_next/static/wasm/....wasm" on the first request. The web glue takes
+		// the bytes as an argument instead, and `sync-wasm.mjs` embeds them.
+		target: 'web',
 		features: [],
 		// Measured baseline, not an aspiration. Breakdown at the time of writing:
 		//   wasm-bindgen glue alone .................  6.3 KB gzip
@@ -40,7 +45,13 @@ const BUILDS = [
 	{ name: 'browser', target: 'web', features: ['full'], budgetKb: 90 },
 	{
 		name: 'node',
-		target: 'nodejs',
+		// `web`, not `nodejs`, even though this build runs under Node. The
+		// `nodejs` glue locates its own `.wasm` with `__dirname`, which every
+		// bundler rewrites to somewhere the file was never copied — the failure
+		// then happens at request time, long after the build reported success.
+		// The `web` glue instead accepts the bytes as an argument, and
+		// `sync-wasm.mjs` embeds them, so nothing has to resolve a path at all.
+		target: 'web',
 		// `cli` adds namespace introspection — which keys exist and what shape
 		// each holds — for the build-time CLI. It is in this build and not the
 		// browser one because the browser resolves messages, it never enumerates

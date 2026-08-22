@@ -27,7 +27,12 @@ async function prepend(file, prefix, marker) {
 }
 
 await prepend(join('cli', 'main.js'), '#!/usr/bin/env node\n', '#!');
-await prepend(join('client', 'index.js'), "'use client';\n", "'use client'");
+
+// Every entry that declares a client boundary. Missing one does not fail the
+// build — it fails at render time in the consuming app, which is much worse.
+for (const entry of [join('client', 'index.js'), 'navigation.js']) {
+	await prepend(entry, "'use client';\n", "'use client'");
+}
 
 // No-op on Windows, which is where this most often runs during development.
 await chmod(join(dist, 'cli', 'main.js'), 0o755);

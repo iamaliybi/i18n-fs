@@ -28,6 +28,14 @@
 			"types": "./dist/client/index.d.ts",
 			"default": "./dist/client/index.js"
 		},
+		"./navigation": {
+			"types": "./dist/navigation.d.ts",
+			"default": "./dist/navigation.js"
+		},
+		"./middleware": {
+			"types": "./dist/middleware.d.ts",
+			"default": "./dist/middleware.js"
+		},
 		"./config": {
 			"types": "./dist/config.d.ts",
 			"default": "./dist/config.js"

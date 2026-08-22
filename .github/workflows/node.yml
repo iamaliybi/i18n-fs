@@ -44,7 +44,7 @@ jobs:
         run: pnpm wasm:build
 
       - name: Sync WASM into the package
-        run: node scripts/sync-wasm.mjs
+        run: pnpm wasm:sync
 
       - name: Typecheck
         run: pnpm typecheck
@@ -53,7 +53,7 @@ jobs:
         run: pnpm build
 
       - name: Test
-        run: pnpm -r test
+        run: pnpm test
 
       # The published layout differs from the source layout: `package.json`
       # imports resolve to `dist`, and the Node glue needs its CommonJS marker.
@@ -79,8 +79,13 @@ jobs:
           set -e
           head -n 1 dist/cli/main.js | grep -q '^#!/usr/bin/env node'
           head -n 1 dist/client/index.js | grep -q "^'use client';"
-          # The server entry must import the client boundary, not inline it.
+          head -n 1 dist/navigation.js | grep -q "^'use client';"
+          # Both must import the client boundary rather than inlining it. An
+          # inlined copy means a second React context, which shows up as
+          # "No I18nProvider found" on a page that plainly has one.
           grep -q "from 'i18n-fs/client'" dist/server/index.js
+          grep -q "from 'i18n-fs/client'" dist/navigation.js
+          test "$(grep -c 'createContext' dist/navigation.js)" = "0"
           echo 'entry points look right'
 
       # The unit tests import the CLI's functions; this runs the actual binary,
@@ -107,3 +112,52 @@ jobs:
             echo 'expected check to fail on a missing key'
             exit 1
           fi
+
+  example:
+    name: example app and end-to-end routing
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: wasm32-unknown-unknown
+
+      - uses: Swatinem/rust-cache@v2
+
+      - name: Install wasm-pack
+        uses: jetli/wasm-pack-action@v0.4.0
+        with:
+          version: v0.13.1
+
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm wasm:build
+      - run: pnpm wasm:sync
+      - run: pnpm build
+
+      # pnpm creates a package's bin shims by looking at the file the `bin`
+      # field points at, and `dist/cli/main.js` does not exist during the first
+      # install. A second install alone is not enough — pnpm sees an up-to-date
+      # tree and does nothing — so the tree is cleared first.
+      - name: Link the CLI now that it exists
+        run: |
+          node scripts/relink.mjs
+          pnpm install --frozen-lockfile
+
+      # The example is part of the test suite, not a sample. It is the only
+      # place the real matcher, the real Edge runtime and the real WebAssembly
+      # binary meet — and every one of those has already failed here in a way no
+      # unit test could see.
+      - name: Build the example
+        run: pnpm example
+
+      - name: End-to-end routing
+        run: pnpm example:test

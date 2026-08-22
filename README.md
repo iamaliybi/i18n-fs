@@ -23,6 +23,26 @@ WebAssembly.
 
 ## Setting it up
 
+Add the middleware:
+
+```ts
+// middleware.ts
+import { createI18nMiddleware } from 'i18n-fs/middleware';
+import i18nConfig from './.i18n-fs/config.mjs';
+
+export default createI18nMiddleware(i18nConfig);
+
+export const config = {
+	matcher: ['/((?!_next/|api/|.*\\.[^/]*$).*)'],
+};
+```
+
+The matcher has to be written out literally — Next.js reads it by static
+analysis and will not accept an imported constant. Note the double backslash:
+`'\.'` in a JavaScript string is just `.`, and a single one quietly stops the
+middleware running on every path but `/`.
+
+
 Render the provider in your root layout, above anything that reads a
 translation:
 
@@ -130,8 +150,12 @@ and Node 22.18+ — that is the version that reads a TypeScript config file
 without a bundler.
 
 ```bash
-pnpm install
+pnpm bootstrap
 ```
+
+That installs, builds the three WebAssembly targets, syncs them into the
+package, builds the package, and installs once more — the last step is what lets
+pnpm link the CLI, which it cannot do before `dist/cli/main.js` exists.
 
 Build the three WebAssembly targets and check their size budgets:
 
@@ -163,6 +187,27 @@ Run the JavaScript side:
 pnpm typecheck && pnpm build && pnpm -r test
 ```
 
+## Navigation
+
+```tsx
+import { Link, useRouter, usePathname, useLocaleSwitcher } from 'i18n-fs/navigation';
+
+<Link href="/about">About</Link>          // -> /about in fa, /en/about in en
+<Link href="/about" locale="en">…</Link>  // always English
+```
+
+`href` is always locale-free. `usePathname()` gives you the path without its
+locale prefix, so a component can compare against `/about` whatever the routing
+strategy is.
+
+```tsx
+const { locale, locales, switchTo, hrefFor } = useLocaleSwitcher();
+```
+
+`switchTo` reloads the page rather than doing a client transition — every layout
+above the switcher was rendered in the old locale, and only a fresh request
+re-runs them.
+
 ## Contributing
 
 Work happens on branches and lands through pull requests; `main` is never pushed
@@ -179,8 +224,8 @@ changing how something fundamental works, the ADR is part of the change.
 | #1  | foundation, Rust core, three WASM targets                     |
 | #2  | CLI: check, build, manifest, typegen                          |
 | #3  | server layer: `getLocale`, `getTranslation`, `I18nProvider`   |
-| #4  | client layer: `useTranslation` — **this one**                 |
-| #5  | middleware and Next.js wrappers; Playwright loop tests        |
+| #4  | client layer: `useTranslation`                                |
+| #5  | middleware, navigation wrappers, example app — **this one**   |
 | #6  | example app, documentation, first publish                     |
 
 ## License

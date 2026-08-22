@@ -7,15 +7,19 @@
 		"node": ">=20.11"
 	},
 	"scripts": {
+		"bootstrap": "pnpm install && pnpm wasm:build && pnpm wasm:sync && pnpm build && node scripts/relink.mjs && pnpm install",
 		"core:fmt": "cargo fmt --all -- --check",
 		"core:lint": "cargo clippy --workspace --all-targets --all-features -- -D warnings",
 		"core:test": "cargo test --workspace --all-features",
 		"core:test:minimal": "cargo test -p i18n-fs-core --no-default-features",
 		"core:bench": "cargo bench -p i18n-fs-core",
 		"wasm:build": "node scripts/build-wasm.mjs",
-		"wasm:size": "node scripts/report-wasm-size.mjs",
-		"build": "pnpm -r build",
-		"typecheck": "pnpm -r typecheck",
+		"wasm:sync": "node scripts/sync-wasm.mjs",
+		"build": "pnpm --filter i18n-fs build",
+		"typecheck": "pnpm --filter i18n-fs typecheck",
+		"test": "pnpm --filter i18n-fs test",
+		"example": "pnpm --filter example-next-app-router build",
+		"example:test": "pnpm --filter example-next-app-router test",
 		"changeset": "changeset",
 		"version-packages": "changeset version"
 	},
