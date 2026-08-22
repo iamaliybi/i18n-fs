@@ -44,7 +44,7 @@ jobs:
         run: pnpm wasm:build
 
       - name: Sync WASM into the package
-        run: node scripts/sync-wasm.mjs
+        run: pnpm wasm:sync
 
       - name: Typecheck
         run: pnpm typecheck
@@ -53,7 +53,7 @@ jobs:
         run: pnpm build
 
       - name: Test
-        run: pnpm -r test
+        run: pnpm test
 
       # The published layout differs from the source layout: `package.json`
       # imports resolve to `dist`, and the Node glue needs its CommonJS marker.
@@ -140,19 +140,24 @@ jobs:
 
       - run: pnpm install --frozen-lockfile
       - run: pnpm wasm:build
-      - run: node scripts/sync-wasm.mjs
-      - run: pnpm --filter i18n-fs build
+      - run: pnpm wasm:sync
+      - run: pnpm build
+
+      # pnpm creates a package's bin shims by looking at the file the `bin`
+      # field points at, and `dist/cli/main.js` does not exist during the first
+      # install. A second install alone is not enough — pnpm sees an up-to-date
+      # tree and does nothing — so the tree is cleared first.
+      - name: Link the CLI now that it exists
+        run: |
+          node scripts/relink.mjs
+          pnpm install --frozen-lockfile
 
       # The example is part of the test suite, not a sample. It is the only
       # place the real matcher, the real Edge runtime and the real WebAssembly
       # binary meet — and every one of those has already failed here in a way no
       # unit test could see.
       - name: Build the example
-        working-directory: examples/next-app-router
-        run: |
-          pnpm exec i18n-fs build --strict
-          pnpm exec next build
+        run: pnpm example
 
       - name: End-to-end routing
-        working-directory: examples/next-app-router
-        run: node --test e2e/*.test.mjs
+        run: pnpm example:test

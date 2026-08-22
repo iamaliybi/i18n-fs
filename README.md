@@ -150,8 +150,12 @@ and Node 22.18+ — that is the version that reads a TypeScript config file
 without a bundler.
 
 ```bash
-pnpm install
+pnpm bootstrap
 ```
+
+That installs, builds the three WebAssembly targets, syncs them into the
+package, builds the package, and installs once more — the last step is what lets
+pnpm link the CLI, which it cannot do before `dist/cli/main.js` exists.
 
 Build the three WebAssembly targets and check their size budgets:
 
