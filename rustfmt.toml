@@ -2,3 +2,8 @@ edition = "2021"
 max_width = 100
 use_small_heuristics = "Default"
 newline_style = "Unix"
+
+# Tabs, rendered four columns wide. Matches .editorconfig so rustfmt and the
+# editor never disagree about a file.
+hard_tabs = true
+tab_spaces = 4

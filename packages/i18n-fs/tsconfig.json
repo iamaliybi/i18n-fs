@@ -1,15 +1,15 @@
 {
-  "extends": "../../tsconfig.base.json",
-  "compilerOptions": {
-    "outDir": "dist",
-    "rootDir": ".",
-    "noEmit": true,
-    "types": ["node"],
-    "paths": {
-      // `package.json#imports` points at `dist`, which does not exist before a
-      // build. Any variant type-checks the same because they share a signature.
-      "#core-bindings": ["./src/core/bindings.node.ts"]
-    }
-  },
-  "include": ["src", "test", "tsup.config.ts", "vitest.config.ts"]
+	"extends": "../../tsconfig.base.json",
+	"compilerOptions": {
+		"outDir": "dist",
+		"rootDir": ".",
+		"noEmit": true,
+		"types": ["node"],
+		"paths": {
+			// `package.json#imports` points at `dist`, which does not exist before a
+			// build. Any variant type-checks the same because they share a signature.
+			"#core-bindings": ["./src/core/bindings.node.ts"]
+		}
+	},
+	"include": ["src", "test", "tsup.config.ts", "vitest.config.ts"]
 }

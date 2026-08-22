@@ -6,14 +6,16 @@ end_of_line = lf
 insert_final_newline = true
 trim_trailing_whitespace = true
 indent_style = tab
-
-[*.{rs,toml}]
-indent_style = space
 indent_size = 4
 
-[*.{json,jsonc,yml,yaml,md}]
+# YAML forbids tabs at the specification level, so these have to stay spaces.
+[*.{yml,yaml}]
 indent_style = space
 indent_size = 2
 
+# Markdown here contains ASCII diagrams and aligned tables. Tab indentation
+# would reflow them and also changes list-continuation semantics.
 [*.md]
+indent_style = space
+indent_size = 2
 trim_trailing_whitespace = false

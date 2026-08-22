@@ -1,53 +1,53 @@
 {
-  "name": "i18n-fs",
-  "version": "0.0.0",
-  "private": true,
-  "description": "Folder-based i18n for Next.js, with a Rust core compiled to WebAssembly.",
-  "license": "MIT",
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/iamaliybi/i18n-fs.git",
-    "directory": "packages/i18n-fs"
-  },
-  "type": "module",
-  "sideEffects": false,
-  "files": [
-    "dist",
-    "wasm"
-  ],
-  "exports": {
-    ".": {
-      "types": "./dist/index.d.ts",
-      "default": "./dist/index.js"
-    },
-    "./config": {
-      "types": "./dist/config.d.ts",
-      "default": "./dist/config.js"
-    },
-    "./package.json": "./package.json"
-  },
-  "imports": {
-    "#core-bindings": {
-      "edge-light": "./dist/core/bindings.edge.js",
-      "workerd": "./dist/core/bindings.edge.js",
-      "browser": "./dist/core/bindings.browser.js",
-      "node": "./dist/core/bindings.node.js",
-      "default": "./dist/core/bindings.edge.js"
-    }
-  },
-  "scripts": {
-    "build": "tsup",
-    "typecheck": "tsc --noEmit",
-    "test": "vitest run",
-    "test:watch": "vitest"
-  },
-  "devDependencies": {
-    "@types/node": "^22.18.0",
-    "tsup": "^8.5.0",
-    "typescript": "^5.9.3",
-    "vitest": "^3.2.4"
-  },
-  "engines": {
-    "node": ">=20.11"
-  }
+	"name": "i18n-fs",
+	"version": "0.0.0",
+	"private": true,
+	"description": "Folder-based i18n for Next.js, with a Rust core compiled to WebAssembly.",
+	"license": "MIT",
+	"repository": {
+		"type": "git",
+		"url": "git+https://github.com/iamaliybi/i18n-fs.git",
+		"directory": "packages/i18n-fs"
+	},
+	"type": "module",
+	"sideEffects": false,
+	"files": [
+		"dist",
+		"wasm"
+	],
+	"exports": {
+		".": {
+			"types": "./dist/index.d.ts",
+			"default": "./dist/index.js"
+		},
+		"./config": {
+			"types": "./dist/config.d.ts",
+			"default": "./dist/config.js"
+		},
+		"./package.json": "./package.json"
+	},
+	"imports": {
+		"#core-bindings": {
+			"edge-light": "./dist/core/bindings.edge.js",
+			"workerd": "./dist/core/bindings.edge.js",
+			"browser": "./dist/core/bindings.browser.js",
+			"node": "./dist/core/bindings.node.js",
+			"default": "./dist/core/bindings.edge.js"
+		}
+	},
+	"scripts": {
+		"build": "tsup",
+		"typecheck": "tsc --noEmit",
+		"test": "vitest run",
+		"test:watch": "vitest"
+	},
+	"devDependencies": {
+		"@types/node": "^22.18.0",
+		"tsup": "^8.5.0",
+		"typescript": "^5.9.3",
+		"vitest": "^3.2.4"
+	},
+	"engines": {
+		"node": ">=20.11"
+	}
 }
