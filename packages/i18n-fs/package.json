@@ -1,6 +1,6 @@
 {
 	"name": "i18n-fs",
-	"version": "0.1.0",
+	"version": "0.1.1",
 	"description": "Folder-based i18n for Next.js, with a Rust core compiled to WebAssembly.",
 	"keywords": [
 		"i18n",
