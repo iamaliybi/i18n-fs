@@ -4,6 +4,8 @@
 #![cfg(feature = "full")]
 #![allow(clippy::unwrap_used, clippy::panic)]
 
+#[cfg(feature = "cli")]
+use i18n_fs_core::store::LeafKind;
 use i18n_fs_core::store::{MessageStore, Resolved};
 use i18n_fs_core::ErrorCode;
 
@@ -234,4 +236,45 @@ fn pathologically_nested_input_is_rejected_rather_than_overflowing() {
 
 	let error = MessageStore::from_json("fa", "deep", &raw).unwrap_err();
 	assert_eq!(error.code, ErrorCode::InvalidJson);
+}
+
+#[cfg(feature = "cli")]
+#[test]
+fn entries_report_the_shape_of_each_key() {
+	let store = store();
+	let entries = store.entries();
+
+	let title = entries.iter().find(|e| e.key == "hero.title").unwrap();
+	assert_eq!(title.kind, LeafKind::Text);
+
+	let bullets = entries.iter().find(|e| e.key == "hero.bullets").unwrap();
+	assert_eq!(bullets.kind, LeafKind::List);
+}
+
+#[cfg(feature = "cli")]
+#[test]
+fn entries_are_sorted_so_generated_files_do_not_churn() {
+	let store = store();
+	let keys: Vec<&str> = store.entries().into_iter().map(|e| e.key).collect();
+
+	let mut sorted = keys.clone();
+	sorted.sort_unstable();
+	assert_eq!(keys, sorted);
+}
+
+#[cfg(feature = "cli")]
+#[test]
+fn scopes_include_the_root_and_are_sorted() {
+	let store = store();
+	let scopes = store.scopes();
+
+	assert_eq!(scopes.first(), Some(&""), "the root scope must be present");
+	assert!(scopes.contains(&"hero"));
+	assert!(scopes.contains(&"hero.cta"));
+	// Arrays are containers too, so their indices are addressable.
+	assert!(scopes.contains(&"hero.bullets"));
+
+	let mut sorted = scopes.clone();
+	sorted.sort_unstable();
+	assert_eq!(scopes, sorted);
 }

@@ -32,7 +32,10 @@ and the build-time CLI — and what makes the loop guarantee testable.
 | `format`  | `full`        | interpolation and rich-text tokenisation            |
 
 `diagnostics` (implied by `full`) adds config validation and human-readable
-error rendering. The Edge build has none of it.
+error rendering. The Edge build has none of it. `cli` adds namespace
+introspection — which keys exist and what shape each holds — and is compiled
+into the Node build only, because the browser resolves messages and never lists
+them.
 
 ## The three binaries
 
@@ -42,7 +45,7 @@ One crate, three outputs. See [ADR 0001](adr/0001-wasm-boundary.md).
                       cargo features        wasm-pack target
   edge      middleware   (none)                 bundler
   browser   client       full                   web
-  node      server, CLI  full                   nodejs
+  node      server, CLI  full + cli             nodejs
 ```
 
 The bundler picks one through `package.json#imports` conditions, so no runtime
@@ -50,6 +53,25 @@ branching survives into shipped code. `packages/i18n-fs/src/core/` holds one
 loader per target behind a single `loadCore()` / `loadFullCore()` interface;
 `loadFullCore()` rejects in the Edge runtime with an explanation rather than
 failing as `undefined is not a function`.
+
+## The CLI
+
+`i18n-fs check` and `i18n-fs build` ship as a `bin` inside the package. They run
+before the app builds:
+
+```
+  i18n-fs check     config validation, JSON parsing, key and shape diff
+                    across locales -> exit 1 on any error
+
+  i18n-fs build     the same checks, then writes .i18n-fs/
+                      config.mjs      resolved snapshot for every runtime
+                      manifest.json   content hash per namespace, for caching
+                      messages.d.ts   the typed key registry
+```
+
+`check` is what makes "no cross-language fallback" survivable: without it, a key
+missing from one locale is invisible until a reader of that locale opens the
+page. See [ADR 0006](adr/0006-cli.md).
 
 ## Request lifecycle
 
@@ -115,7 +137,6 @@ The foundation and the core are in place. Still to come:
 
 | PR  | scope                                                          |
 | --- | -------------------------------------------------------------- |
-| #2  | CLI: scan `public/`, validate, hash manifest, generate types     |
 | #3  | server layer: `getLocale`, `getTranslation`, `I18nProvider`      |
 | #4  | client layer: `useTranslation` with `use()` and a stable cache   |
 | #5  | middleware and the Next.js wrappers; Playwright loop tests       |

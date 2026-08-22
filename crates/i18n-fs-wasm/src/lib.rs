@@ -145,6 +145,23 @@ mod messages {
 			self.inner.keys().map(str::to_owned).collect()
 		}
 
+		/// Every key with the shape it holds, sorted by key.
+		///
+		/// The CLI writes these into generated files, so the order is stable:
+		/// unordered output would churn the diff on every run.
+		#[cfg(feature = "cli")]
+		pub fn entries(&self) -> Result<JsValue, JsValue> {
+			to_js(&self.inner.entries())
+		}
+
+		/// Every scope in the namespace, sorted, with the root as an empty
+		/// string. These are the values that may be passed as the second
+		/// argument to `useTranslation`.
+		#[cfg(feature = "cli")]
+		pub fn scopes(&self) -> Vec<String> {
+			self.inner.scopes().into_iter().map(str::to_owned).collect()
+		}
+
 		/// Whether a key resolves to a message or a list.
 		pub fn has(&self, scope: Option<String>, key: &str) -> bool {
 			self.inner.has(scope.as_deref(), key)

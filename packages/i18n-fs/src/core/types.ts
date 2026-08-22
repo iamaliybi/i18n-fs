@@ -110,6 +110,34 @@ export interface FullCore extends EdgeCore {
 	tokenize(template: string): MessageNode[];
 }
 
+/** What shape a key holds. */
+export type LeafKind = 'text' | 'list';
+
+/** One key of a namespace and the shape it holds. */
+export interface NamespaceEntry {
+	key: string;
+	kind: LeafKind;
+}
+
+/**
+ * A store from the Node build, which additionally knows how to enumerate a
+ * namespace.
+ *
+ * Enumeration is a build-time concern, so it is compiled into the Node binary
+ * only — the browser resolves messages, it never lists them.
+ */
+export interface CliStore extends Store {
+	/** Every key with its shape, sorted, so generated files do not churn. */
+	entries(): NamespaceEntry[];
+	/** Every scope, sorted, with the root as an empty string. */
+	scopes(): string[];
+}
+
+/** The Node build of the core, as used by the CLI. */
+export interface CliCore extends Omit<FullCore, 'Store'> {
+	Store: new (locale: string, namespace: string, raw: string) => CliStore;
+}
+
 /**
  * Which core build this runtime loaded.
  *

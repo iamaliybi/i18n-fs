@@ -69,3 +69,28 @@ jobs:
             }
             console.log('built package loads:', core.coreVersion());
           "
+
+      # The unit tests import the CLI's functions; this runs the actual binary,
+      # which is the only thing that covers the shebang, argument parsing and
+      # exit codes.
+      - name: Smoke-test the built CLI
+        run: |
+          set -e
+          fixture="$(mktemp -d)"
+          mkdir -p "$fixture/public/locales/fa" "$fixture/public/locales/en"
+          printf 'export default { locales: ["fa", "en"], defaultLocale: "fa" };\n' \
+            > "$fixture/i18n-fs.config.mjs"
+          echo '{"hero":{"title":"a","bullets":["x"]}}' > "$fixture/public/locales/fa/home.json"
+          echo '{"hero":{"title":"b","bullets":["y"]}}' > "$fixture/public/locales/en/home.json"
+
+          node packages/i18n-fs/dist/cli/main.js build --cwd "$fixture" --strict
+          test -f "$fixture/.i18n-fs/messages.d.ts"
+          test -f "$fixture/.i18n-fs/manifest.json"
+          test -f "$fixture/.i18n-fs/config.mjs"
+
+          # A missing key must fail the build, not warn.
+          echo '{"hero":{"title":"b"}}' > "$fixture/public/locales/en/home.json"
+          if node packages/i18n-fs/dist/cli/main.js check --cwd "$fixture"; then
+            echo 'expected check to fail on a missing key'
+            exit 1
+          fi

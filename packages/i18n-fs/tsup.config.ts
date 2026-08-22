@@ -10,6 +10,7 @@ export default defineConfig({
 		'src/core/bindings.edge.ts',
 		'src/core/bindings.browser.ts',
 		'src/core/bindings.node.ts',
+		'src/cli/main.ts',
 	],
 	format: ['esm'],
 	dts: true,

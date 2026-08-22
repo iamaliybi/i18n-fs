@@ -38,7 +38,16 @@ const BUILDS = [
 		budgetKb: 65,
 	},
 	{ name: 'browser', target: 'web', features: ['full'], budgetKb: 90 },
-	{ name: 'node', target: 'nodejs', features: ['full'], budgetKb: 90 },
+	{
+		name: 'node',
+		target: 'nodejs',
+		// `cli` adds namespace introspection — which keys exist and what shape
+		// each holds — for the build-time CLI. It is in this build and not the
+		// browser one because the browser resolves messages, it never enumerates
+		// them, and this binary is read from disk rather than downloaded.
+		features: ['full', 'cli'],
+		budgetKb: 100,
+	},
 ];
 
 function build({ name, target, features }) {

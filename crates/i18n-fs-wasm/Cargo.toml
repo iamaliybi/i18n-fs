@@ -16,6 +16,7 @@ crate-type = ["cdylib", "rlib"]
 default = ["full"]
 full = ["i18n-fs-core/full", "diagnostics"]
 diagnostics = ["i18n-fs-core/diagnostics"]
+cli = ["full", "i18n-fs-core/cli"]
 
 [dependencies]
 i18n-fs-core = { path = "../i18n-fs-core", default-features = false }
