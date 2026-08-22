@@ -83,9 +83,11 @@ page. See [ADR 0006](adr/0006-cli.md).
     │      ├─ rewrite           serve /[locale]/… without changing the URL
     │      └─ redirect          send to the canonical public path
     │
-    ├─ root layout (Node)       read the resolved locale from headers/cookies,
-    │                           load namespaces from public/ with fs,
-    │                           render <I18nProvider locale messages>
+    ├─ root layout (Node)       getLocale() reads the middleware header, the
+    │                           cookie, then Accept-Language; getTranslation()
+    │                           loads namespaces from public/ with fs;
+    │                           <I18nProvider namespaces={...}> hands the
+    │                           locale and those namespaces to the client
     │
     └─ client                   useTranslation(namespace, scope) reads context;
                                 a namespace not yet loaded suspends on a
@@ -94,6 +96,21 @@ page. See [ADR 0006](adr/0006-cli.md).
 
 Locale resolution order depends on the strategy, but the URL wins wherever the
 URL is authoritative — a shared link must render the locale it names.
+
+## Entry points
+
+| entry | runs where | holds |
+| --- | --- | --- |
+| `i18n-fs` | anywhere | the core loader, config types |
+| `i18n-fs/server` | Server Components | `getLocale`, `getTranslation`, `I18nProvider` |
+| `i18n-fs/client` | Client Components | the context and `useLocale` |
+| `i18n-fs/config` | build time | `defineConfig` |
+
+`i18n-fs/server` reads request headers and the filesystem, so importing it from
+a Client Component is a build error — which is the intent. The provider is a
+Server Component that renders into `i18n-fs/client`; it self-references that
+entry by package path so the `'use client'` directive stays a real module
+boundary the bundler can see, rather than being inlined into the server chunk.
 
 ## Translation lookup
 
@@ -137,7 +154,6 @@ The foundation and the core are in place. Still to come:
 
 | PR  | scope                                                          |
 | --- | -------------------------------------------------------------- |
-| #3  | server layer: `getLocale`, `getTranslation`, `I18nProvider`      |
 | #4  | client layer: `useTranslation` with `use()` and a stable cache   |
 | #5  | middleware and the Next.js wrappers; Playwright loop tests       |
 | #6  | example app, documentation, first publish                        |
