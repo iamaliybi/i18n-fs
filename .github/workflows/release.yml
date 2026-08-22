@@ -18,6 +18,12 @@ jobs:
   release:
     name: version or publish
     runs-on: ubuntu-latest
+    # Promoted to `env` because the `secrets` context is not available in a
+    # step's `if:` — only in `with:`. Referencing it there makes the whole
+    # workflow file invalid, which GitHub reports as a failed run with no jobs
+    # and no log, on every branch rather than just this workflow's own.
+    env:
+      HAS_NPM_TOKEN: ${{ secrets.NPM_TOKEN != '' }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -55,7 +61,7 @@ jobs:
           pnpm build
 
       - name: Note that publishing is disabled
-        if: ${{ !secrets.NPM_TOKEN }}
+        if: env.HAS_NPM_TOKEN != 'true'
         run: |
           echo "::warning::NPM_TOKEN is not set. The version pull request will           still be opened or updated, but nothing will be published."
 
@@ -72,7 +78,7 @@ jobs:
         uses: changesets/action@v1
         with:
           version: pnpm changeset version
-          publish: ${{ secrets.NPM_TOKEN && 'pnpm changeset publish' || '' }}
+          publish: ${{ env.HAS_NPM_TOKEN == 'true' && 'pnpm changeset publish' || '' }}
           commit: 'chore(release): version packages'
           title: 'chore(release): version packages'
         env:
