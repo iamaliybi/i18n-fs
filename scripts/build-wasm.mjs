@@ -21,6 +21,14 @@ import { readFileSync } from 'node:fs';
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const crate = join(root, 'crates', 'i18n-fs-wasm');
 
+// The npm package version, stamped into each binary so the JavaScript loader
+// can refuse a `wasm/` directory left over from a different version. The crates
+// are never published and stay at 0.0.0, so their own version says nothing a
+// consumer would recognise.
+const VERSION = JSON.parse(
+	readFileSync(join(root, 'packages', 'i18n-fs', 'package.json'), 'utf8'),
+).version;
+
 /** @type {{name: string, target: string, features: string[], budgetKb: number}[]} */
 const BUILDS = [
 	{
@@ -84,7 +92,7 @@ function build({ name, target, features }) {
 			'--',
 			...cargoArgs,
 		],
-		{ stdio: 'inherit', cwd: root },
+		{ stdio: 'inherit', cwd: root, env: { ...process.env, I18N_FS_VERSION: VERSION } },
 	);
 
 	return join(crate, outDir);
@@ -113,7 +121,7 @@ for (const spec of BUILDS) {
 	results.push({ ...spec, ...measure(dir) });
 }
 
-console.log('\n=== size report');
+console.log(`\n=== size report (i18n-fs ${VERSION})`);
 let overBudget = false;
 for (const result of results) {
 	const over = result.gzip > result.budgetKb * 1024;

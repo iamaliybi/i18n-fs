@@ -1,4 +1,7 @@
+import { readFileSync } from 'node:fs';
 import { defineConfig } from 'tsup';
+
+const { version } = JSON.parse(readFileSync('./package.json', 'utf8')) as { version: string };
 
 export default defineConfig({
 	entry: [
@@ -16,6 +19,9 @@ export default defineConfig({
 		'src/navigation.ts',
 		'src/middleware.ts',
 	],
+	// One string, not the whole manifest: importing package.json would inline it
+	// into every entry point.
+	define: { __I18N_FS_VERSION__: JSON.stringify(version) },
 	format: ['esm'],
 	dts: true,
 	clean: true,

@@ -1,7 +1,13 @@
+import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { defineConfig } from 'vitest/config';
 
+const { version } = JSON.parse(readFileSync('./package.json', 'utf8')) as { version: string };
+
 export default defineConfig({
+	// Mirrors tsup, so a test sees the version a build would produce rather than
+	// the unbuilt placeholder.
+	define: { __I18N_FS_VERSION__: JSON.stringify(version) },
 	resolve: {
 		alias: {
 			// `package.json#imports` points at `dist`, which is correct for
