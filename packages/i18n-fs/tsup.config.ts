@@ -11,6 +11,8 @@ export default defineConfig({
 		'src/core/bindings.browser.ts',
 		'src/core/bindings.node.ts',
 		'src/cli/main.ts',
+		'src/server/index.ts',
+		'src/client/index.ts',
 	],
 	format: ['esm'],
 	dts: true,
@@ -19,9 +21,17 @@ export default defineConfig({
 	splitting: false,
 	treeshake: true,
 	external: [
+		// Provided by the application, not bundled.
+		'react',
+		'react-dom',
+		'next',
+		/^next\//,
 		// Resolved at runtime through `package.json#imports`, so it must survive
 		// bundling as a bare specifier.
 		'#core-bindings',
+		// Self-referenced by the server provider so the 'use client' boundary
+		// survives as a real module instead of being inlined into the server chunk.
+		'i18n-fs/client',
 		// The wasm-pack output ships as files and is loaded at runtime. Bundling
 		// it would inline all three binaries into every entry point. The relative
 		// path is the same from `src/core` and `dist/core`, so it survives the

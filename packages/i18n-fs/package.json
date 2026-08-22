@@ -20,6 +20,14 @@
 			"types": "./dist/index.d.ts",
 			"default": "./dist/index.js"
 		},
+		"./server": {
+			"types": "./dist/server/index.d.ts",
+			"default": "./dist/server/index.js"
+		},
+		"./client": {
+			"types": "./dist/client/index.d.ts",
+			"default": "./dist/client/index.js"
+		},
 		"./config": {
 			"types": "./dist/config.d.ts",
 			"default": "./dist/config.js"
@@ -36,13 +44,19 @@
 		}
 	},
 	"scripts": {
-		"build": "tsup && node scripts/add-shebang.mjs",
+		"build": "tsup && node scripts/postbuild.mjs",
 		"typecheck": "tsc --noEmit",
 		"test": "vitest run",
 		"test:watch": "vitest"
 	},
 	"devDependencies": {
+		"@testing-library/react": "^16.3.0",
 		"@types/node": "^22.18.0",
+		"@types/react": "^19.2.2",
+		"jsdom": "^26.1.0",
+		"next": "^15.5.4",
+		"react": "^19.2.0",
+		"react-dom": "^19.2.0",
 		"tsup": "^8.5.0",
 		"typescript": "^5.9.3",
 		"vitest": "^3.2.4"
@@ -52,5 +66,14 @@
 	},
 	"bin": {
 		"i18n-fs": "./dist/cli/main.js"
+	},
+	"peerDependencies": {
+		"next": "^14.2.0 || ^15.0.0 || ^16.0.0",
+		"react": "^18.3.0 || ^19.0.0"
+	},
+	"peerDependenciesMeta": {
+		"next": {
+			"optional": true
+		}
 	}
 }

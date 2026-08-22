@@ -3,6 +3,8 @@ packages:
   - "examples/*"
 
 # esbuild (pulled in by tsup and vitest) fetches its platform binary in a
-# postinstall script. Approved here so CI installs never wait on a prompt.
+# postinstall script, and sharp is a transitive Next.js dependency used only for
+# image optimisation. Approved here so CI installs never wait on a prompt.
 allowBuilds:
   esbuild: true
+  sharp: true

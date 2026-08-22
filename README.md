@@ -21,6 +21,32 @@ WebAssembly.
 - **Loop-safe routing.** The redirect logic is idempotent by construction and
   proven so by property tests, not by care.
 
+## Setting it up
+
+Render the provider in your root layout, above anything that reads a
+translation:
+
+```tsx
+import { I18nProvider, getLocale } from 'i18n-fs/server';
+
+export default async function RootLayout({ children }) {
+	const locale = await getLocale();
+
+	return (
+		<html lang={locale}>
+			<body>
+				<I18nProvider namespaces={['common']}>{children}</I18nProvider>
+			</body>
+		</html>
+	);
+}
+```
+
+`getLocale()` derives the locale from the request on every full page load: the
+header the middleware set, then the cookie, then `Accept-Language`, then your
+default. Only the namespaces you name are sent to the browser — Server
+Components load what they need themselves.
+
 ## Configuration
 
 ```ts
@@ -41,6 +67,17 @@ export default defineConfig({
 public/locales/fa/home/hero.json
 public/locales/en/home/hero.json
 ```
+
+In a Server Component:
+
+```ts
+import { getTranslation } from 'i18n-fs/server';
+
+const t = await getTranslation('home/hero', 'cta');
+t('label');
+```
+
+In a Client Component, once the client layer lands:
 
 ```ts
 const t = useTranslation('home/hero', 'cta');
@@ -133,8 +170,8 @@ changing how something fundamental works, the ADR is part of the change.
 | PR  | scope                                                        |
 | --- | ------------------------------------------------------------ |
 | #1  | foundation, Rust core, three WASM targets                     |
-| #2  | CLI: check, build, manifest, typegen — **this one**           |
-| #3  | server layer: `getLocale`, `getTranslation`, `I18nProvider`   |
+| #2  | CLI: check, build, manifest, typegen                          |
+| #3  | server layer: `getLocale`, `getTranslation`, `I18nProvider` — **this one** |
 | #4  | client layer: `useTranslation`                                |
 | #5  | middleware and Next.js wrappers; Playwright loop tests        |
 | #6  | example app, documentation, first publish                     |

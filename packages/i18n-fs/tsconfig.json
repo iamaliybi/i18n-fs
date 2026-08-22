@@ -8,7 +8,10 @@
 		"paths": {
 			// `package.json#imports` points at `dist`, which does not exist before a
 			// build. Any variant type-checks the same because they share a signature.
-			"#core-bindings": ["./src/core/bindings.node.ts"]
+			"#core-bindings": ["./src/core/bindings.node.ts"],
+			// Self-reference: resolves to dist at runtime, which does not exist
+			// before a build. The source has the same shape.
+			"i18n-fs/client": ["./src/client/index.ts"]
 		}
 	},
 	"include": ["src", "test", "tsup.config.ts", "vitest.config.ts"]

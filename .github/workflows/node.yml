@@ -70,6 +70,19 @@ jobs:
             console.log('built package loads:', core.coreVersion());
           "
 
+      # The 'use client' directive and the shebang are restored by a post-build
+      # step because esbuild strips both. Neither is covered by a unit test, and
+      # losing either breaks the package silently.
+      - name: Check the built entry points
+        working-directory: packages/i18n-fs
+        run: |
+          set -e
+          head -n 1 dist/cli/main.js | grep -q '^#!/usr/bin/env node'
+          head -n 1 dist/client/index.js | grep -q "^'use client';"
+          # The server entry must import the client boundary, not inline it.
+          grep -q "from 'i18n-fs/client'" dist/server/index.js
+          echo 'entry points look right'
+
       # The unit tests import the CLI's functions; this runs the actual binary,
       # which is the only thing that covers the shebang, argument parsing and
       # exit codes.
