@@ -194,7 +194,39 @@ export async function readRawNamespaces(
 	return bundle;
 }
 
+/** Content hash per namespace, for one locale. */
+export type LocaleManifest = Record<string, string>;
+
+let manifestCache: Promise<Record<string, LocaleManifest>> | undefined;
+
+/**
+ * The manifest the CLI generated.
+ *
+ * Absent when `i18n-fs build` has not run. That is not fatal: without hashes
+ * the client fetches unversioned URLs, which still work — they just cannot be
+ * cached immutably. Failing the render over a caching optimisation would be
+ * the wrong trade.
+ */
+export async function readManifest(
+	cwd: string = process.cwd(),
+): Promise<Record<string, LocaleManifest>> {
+	manifestCache ??= readFile(join(cwd, '.i18n-fs', 'manifest.json'), 'utf8')
+		.then((raw) => JSON.parse(raw) as Record<string, LocaleManifest>)
+		.catch(() => ({}));
+
+	return manifestCache;
+}
+
+/** The hashes for one locale. */
+export async function readLocaleManifest(
+	locale: string,
+	cwd: string = process.cwd(),
+): Promise<LocaleManifest> {
+	return (await readManifest(cwd))[locale] ?? {};
+}
+
 /** Drop every cached namespace. Exposed for tests. */
 export function clearMessageCache(): void {
 	caches.clear();
+	manifestCache = undefined;
 }

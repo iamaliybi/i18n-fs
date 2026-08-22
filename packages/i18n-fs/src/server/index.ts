@@ -26,7 +26,10 @@ export {
 	loadNamespace,
 	loadNamespaces,
 	namespacePath,
+	readLocaleManifest,
+	readManifest,
 	readRawNamespaces,
+	type LocaleManifest,
 	type MessageBundle,
 	type SerialisableBundle,
 } from './messages.js';

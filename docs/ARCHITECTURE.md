@@ -89,9 +89,11 @@ page. See [ADR 0006](adr/0006-cli.md).
     │                           <I18nProvider namespaces={...}> hands the
     │                           locale and those namespaces to the client
     │
-    └─ client                   useTranslation(namespace, scope) reads context;
-                                a namespace not yet loaded suspends on a
-                                module-scoped promise cache
+    └─ client                   useTranslation(namespace, scope) reads the
+                                context; a namespace the server sent resolves
+                                without suspending, anything else suspends on a
+                                module-scoped promise and is fetched from
+                                public/ with its content hash
 ```
 
 Locale resolution order depends on the strategy, but the URL wins wherever the
@@ -103,7 +105,7 @@ URL is authoritative — a shared link must render the locale it names.
 | --- | --- | --- |
 | `i18n-fs` | anywhere | the core loader, config types |
 | `i18n-fs/server` | Server Components | `getLocale`, `getTranslation`, `I18nProvider` |
-| `i18n-fs/client` | Client Components | the context and `useLocale` |
+| `i18n-fs/client` | Client Components | `useTranslation`, `useLocale`, the context |
 | `i18n-fs/config` | build time | `defineConfig` |
 
 `i18n-fs/server` reads request headers and the filesystem, so importing it from
@@ -154,6 +156,5 @@ The foundation and the core are in place. Still to come:
 
 | PR  | scope                                                          |
 | --- | -------------------------------------------------------------- |
-| #4  | client layer: `useTranslation` with `use()` and a stable cache   |
 | #5  | middleware and the Next.js wrappers; Playwright loop tests       |
 | #6  | example app, documentation, first publish                        |

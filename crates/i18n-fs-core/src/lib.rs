@@ -38,6 +38,12 @@ pub use routing::{canonical_public_path, decide, Action, Decision, LocaleSource,
 
 #[cfg(feature = "full")]
 pub use format::{flatten, interpolate, tokenize, Interpolation, Node};
+/// The JSON value type used by [`store::MessageStore::from_value`].
+///
+/// Re-exported because it appears in that public signature: without it, callers
+/// outside this crate cannot name the type they are required to pass.
+#[cfg(feature = "full")]
+pub use serde_json::Value as JsonValue;
 #[cfg(all(feature = "full", feature = "cli"))]
 pub use store::{Entry, LeafKind};
 #[cfg(feature = "full")]

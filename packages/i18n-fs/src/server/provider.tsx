@@ -16,7 +16,7 @@ import type { ReactNode } from 'react';
 import { I18nClientProvider } from 'i18n-fs/client';
 import { getI18nConfig } from './config.js';
 import { getLocale } from './locale.js';
-import { readRawNamespaces } from './messages.js';
+import { readLocaleManifest, readRawNamespaces } from './messages.js';
 
 /** Props of {@link I18nProvider}. */
 export interface I18nProviderProps {
@@ -49,12 +49,21 @@ export async function I18nProvider({
 	const config = await getI18nConfig();
 	const locale = explicitLocale ?? (await getLocale());
 
-	const messages = namespaces.length
-		? await readRawNamespaces(config, locale, namespaces)
-		: {};
+	const [messages, manifest] = await Promise.all([
+		namespaces.length ? readRawNamespaces(config, locale, namespaces) : {},
+		// Sent for every locale, not just the pre-loaded namespaces: a Client
+		// Component may ask for one the server did not send, and it needs the
+		// hash to fetch a cacheable URL.
+		readLocaleManifest(locale),
+	]);
 
 	return (
-		<I18nClientProvider locale={locale} config={config} messages={messages}>
+		<I18nClientProvider
+			locale={locale}
+			config={config}
+			messages={messages}
+			manifest={manifest}
+		>
 			{children}
 		</I18nClientProvider>
 	);

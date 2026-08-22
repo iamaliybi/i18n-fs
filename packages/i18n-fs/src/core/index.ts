@@ -15,6 +15,7 @@ import { CAPABILITY, loadBindings } from '#core-bindings';
 import type { CliCore, EdgeCore, FullCore } from './types.js';
 
 let pending: Promise<EdgeCore> | undefined;
+let pendingFull: Promise<FullCore> | undefined;
 
 /**
  * The core available in this runtime.
@@ -34,18 +35,25 @@ export function loadCore(): Promise<EdgeCore> {
  * Loading messages inside middleware is a design mistake rather than a missing
  * feature, so it fails loudly with the reason.
  */
-export async function loadFullCore(): Promise<FullCore> {
-	const core = await loadCore();
+export function loadFullCore(): Promise<FullCore> {
+	// The same promise every time, not merely the same underlying work. React's
+	// `use()` identifies a suspended read by promise identity, and an `async`
+	// function returns a fresh promise per call — which would suspend forever.
+	pendingFull ??= (async () => {
+		const core = await loadCore();
 
-	if (CAPABILITY !== 'full') {
-		throw new Error(
-			'[i18n-fs] The Edge build of the core does not include message handling. ' +
-				'Middleware resolves the locale; loading and formatting messages belongs ' +
-				'in a Server Component or a Client Component.',
-		);
-	}
+		if (CAPABILITY !== 'full') {
+			throw new Error(
+				'[i18n-fs] The Edge build of the core does not include message handling. ' +
+					'Middleware resolves the locale; loading and formatting messages belongs ' +
+					'in a Server Component or a Client Component.',
+			);
+		}
 
-	return core as FullCore;
+		return core as FullCore;
+	})();
+
+	return pendingFull;
 }
 
 /**
