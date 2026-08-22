@@ -6,7 +6,7 @@
 
 import { copyFileSync, existsSync, readFileSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
-import { fileURLToPath } from 'node:url';
+import { fileURLToPath, pathToFileURL } from 'node:url';
 
 const pkg = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const root = resolve(pkg, '..', '..');
@@ -72,6 +72,39 @@ for (const target of ['edge', 'node']) {
 }
 require_(join(wasm, 'browser', 'i18n_fs_wasm_bg.wasm'), 'the browser binary is not embedded');
 
+// The version check the runtime performs, performed here instead — before the
+// artefact leaves the machine rather than after it reaches a user.
+//
+// This is the trap the version stamp created: bumping the version and
+// publishing without rebuilding produces a package whose binary is stamped with
+// the *old* version, and whose loader then throws for everyone who installs it.
+// Nothing above would notice, because every file it checks exists and is
+// perfectly well formed.
+if (!problems.length) {
+	const entry = pathToFileURL(join(dist, 'index.js')).href;
+
+	try {
+		const { VERSION, loadFullCore } = await import(entry);
+
+		if (VERSION !== manifest.version) {
+			problems.push(
+				`dist reports version ${VERSION} but package.json says ${manifest.version} — ` +
+					'the JavaScript was built before the version was bumped',
+			);
+		}
+
+		const compiled = (await loadFullCore()).coreVersion();
+		if (compiled !== manifest.version) {
+			problems.push(
+				`the compiled core reports version ${compiled} but package.json says ` +
+					`${manifest.version} — the WebAssembly was built before the version was bumped`,
+			);
+		}
+	} catch (error) {
+		problems.push(`could not load the built package: ${error.message}`);
+	}
+}
+
 if (problems.length) {
 	console.error('Refusing to publish:\n');
 	for (const problem of problems) console.error(`  - ${problem}`);
@@ -79,4 +112,4 @@ if (problems.length) {
 	process.exit(1);
 }
 
-console.log(`i18n-fs ${manifest.version} looks publishable.`);
+console.log(`i18n-fs ${manifest.version} looks publishable, and both halves agree on the version.`);
