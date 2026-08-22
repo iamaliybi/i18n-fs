@@ -38,6 +38,8 @@ pub use routing::{canonical_public_path, decide, Action, Decision, LocaleSource,
 
 #[cfg(feature = "full")]
 pub use format::{flatten, interpolate, tokenize, Interpolation, Node};
+#[cfg(all(feature = "full", feature = "cli"))]
+pub use store::{Entry, LeafKind};
 #[cfg(feature = "full")]
 pub use store::{Leaf, MessageStore, Resolved};
 

@@ -54,10 +54,36 @@ t.array('bullets');
 
 The first argument is the file, the second is an object inside it.
 
+## Checking your messages
+
+Because a missing translation never falls back to another language, it has to be
+caught at build time:
+
+```bash
+npx i18n-fs check
+```
+
+It validates the config, reports invalid JSON with the line and column, and
+compares every locale against the default one — by key *and* by shape, so a key
+that is a string in one language and a list in another is caught before it
+reaches a reader.
+
+```bash
+npx i18n-fs build
+```
+
+Runs the same checks, then writes `.i18n-fs/`: the resolved config every runtime
+imports, a content hash per namespace so the browser can cache immutably, and a
+typed key registry. It refuses to write if `check` finds an error.
+
+Add `--strict` to treat warnings as errors, or `--json` for machine-readable
+output.
+
 ## Development
 
 Requires Rust (stable, with the `wasm32-unknown-unknown` target), `wasm-pack`
-and Node 20.11+.
+and Node 22.18+ — that is the version that reads a TypeScript config file
+without a bundler.
 
 ```bash
 pnpm install
@@ -106,8 +132,8 @@ changing how something fundamental works, the ADR is part of the change.
 
 | PR  | scope                                                        |
 | --- | ------------------------------------------------------------ |
-| #1  | foundation, Rust core, three WASM targets — **this one**      |
-| #2  | CLI: scan, validate, hash manifest, generate types            |
+| #1  | foundation, Rust core, three WASM targets                     |
+| #2  | CLI: check, build, manifest, typegen — **this one**           |
 | #3  | server layer: `getLocale`, `getTranslation`, `I18nProvider`   |
 | #4  | client layer: `useTranslation`                                |
 | #5  | middleware and Next.js wrappers; Playwright loop tests        |

@@ -19,6 +19,35 @@ pub enum Leaf {
 	List(Vec<String>),
 }
 
+/// What shape a key holds, without its value.
+///
+/// Requires the `cli` feature.
+///
+/// The CLI needs this to generate types and to compare locales: a key that is a
+/// string in one locale and a list in another is a mismatch worth reporting,
+/// and comparing key names alone would miss it.
+#[cfg(feature = "cli")]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, serde::Serialize, serde::Deserialize)]
+#[serde(rename_all = "lowercase")]
+pub enum LeafKind {
+	/// A single message, reachable through `t`.
+	Text,
+	/// A list of messages, reachable through `t.array`.
+	List,
+}
+
+/// One entry of a namespace: its dotted key and the shape it holds.
+///
+/// Requires the `cli` feature.
+#[cfg(feature = "cli")]
+#[derive(Debug, Clone, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
+pub struct Entry<'a> {
+	/// Dotted path from the root of the namespace.
+	pub key: &'a str,
+	/// The shape the key holds.
+	pub kind: LeafKind,
+}
+
 /// The value a lookup produced.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Resolved<'a> {
@@ -106,6 +135,39 @@ impl MessageStore {
 	/// locales against each other and to generate types.
 	pub fn keys(&self) -> impl Iterator<Item = &str> {
 		self.leaves.keys().map(String::as_str)
+	}
+
+	/// Every key with the shape it holds, sorted by key.
+	///
+	/// Sorted because the CLI writes these into generated files: unordered
+	/// output would produce a different file on every run and churn diffs.
+	#[cfg(feature = "cli")]
+	pub fn entries(&self) -> Vec<Entry<'_>> {
+		let mut entries: Vec<Entry<'_>> = self
+			.leaves
+			.iter()
+			.map(|(key, leaf)| Entry {
+				key: key.as_str(),
+				kind: match leaf {
+					Leaf::Text(_) => LeafKind::Text,
+					Leaf::List(_) => LeafKind::List,
+				},
+			})
+			.collect();
+		entries.sort_unstable_by(|a, b| a.key.cmp(b.key));
+		entries
+	}
+
+	/// Every scope in the namespace — the object paths a caller may pass as the
+	/// second argument to `useTranslation` — sorted, with the root included as
+	/// an empty string.
+	#[cfg(feature = "cli")]
+	pub fn scopes(&self) -> Vec<&str> {
+		let mut scopes: Vec<&str> = std::iter::once("")
+			.chain(self.containers.iter().map(String::as_str))
+			.collect();
+		scopes.sort_unstable();
+		scopes
 	}
 
 	fn flatten(&mut self, prefix: String, value: &Value) {

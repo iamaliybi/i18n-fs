@@ -19,6 +19,10 @@ full = ["dep:serde_json", "diagnostics"]
 # `format!` calls pull a surprising amount of formatting machinery into the
 # binary.
 diagnostics = []
+# Namespace introspection: which keys exist and what shape each holds. Used by
+# the build-time CLI only, so it is kept out of the browser binary — the browser
+# resolves messages, it never enumerates them.
+cli = []
 
 [dependencies]
 serde = { workspace = true }

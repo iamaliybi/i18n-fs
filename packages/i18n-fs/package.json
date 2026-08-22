@@ -36,7 +36,7 @@
 		}
 	},
 	"scripts": {
-		"build": "tsup",
+		"build": "tsup && node scripts/add-shebang.mjs",
 		"typecheck": "tsc --noEmit",
 		"test": "vitest run",
 		"test:watch": "vitest"
@@ -48,6 +48,9 @@
 		"vitest": "^3.2.4"
 	},
 	"engines": {
-		"node": ">=20.11"
+		"node": ">=22.18"
+	},
+	"bin": {
+		"i18n-fs": "./dist/cli/main.js"
 	}
 }

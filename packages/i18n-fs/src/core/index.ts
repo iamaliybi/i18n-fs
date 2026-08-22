@@ -12,7 +12,7 @@
  */
 
 import { CAPABILITY, loadBindings } from '#core-bindings';
-import type { EdgeCore, FullCore } from './types.js';
+import type { CliCore, EdgeCore, FullCore } from './types.js';
 
 let pending: Promise<EdgeCore> | undefined;
 
@@ -46,6 +46,25 @@ export async function loadFullCore(): Promise<FullCore> {
 	}
 
 	return core as FullCore;
+}
+
+/**
+ * The core including namespace introspection, for the build-time CLI.
+ *
+ * Only the Node build carries it. Rejects elsewhere rather than failing later
+ * as `store.entries is not a function`.
+ */
+export async function loadCliCore(): Promise<CliCore> {
+	const core = await loadFullCore();
+
+	if (typeof (core.Store.prototype as { entries?: unknown }).entries !== 'function') {
+		throw new Error(
+			'[i18n-fs] Namespace introspection is compiled into the Node build of the ' +
+				'core only. The CLI must run under Node.',
+		);
+	}
+
+	return core as CliCore;
 }
 
 /** Whether this runtime's core can load and format messages. */
