@@ -44,8 +44,12 @@ export default async function RootLayout({ children }) {
 
 `getLocale()` derives the locale from the request on every full page load: the
 header the middleware set, then the cookie, then `Accept-Language`, then your
-default. Only the namespaces you name are sent to the browser — Server
-Components load what they need themselves.
+default.
+
+Only the namespaces you name are sent to the browser. Server Components load
+what they need themselves, and a Client Component asking for a namespace that
+was not sent fetches it and suspends — so put a `<Suspense>` boundary above it,
+or name it in `namespaces` to avoid the wait.
 
 ## Configuration
 
@@ -77,9 +81,12 @@ const t = await getTranslation('home/hero', 'cta');
 t('label');
 ```
 
-In a Client Component, once the client layer lands:
+In a Client Component:
 
 ```ts
+'use client';
+import { useTranslation } from 'i18n-fs/client';
+
 const t = useTranslation('home/hero', 'cta');
 
 t('label');
@@ -171,8 +178,8 @@ changing how something fundamental works, the ADR is part of the change.
 | --- | ------------------------------------------------------------ |
 | #1  | foundation, Rust core, three WASM targets                     |
 | #2  | CLI: check, build, manifest, typegen                          |
-| #3  | server layer: `getLocale`, `getTranslation`, `I18nProvider` — **this one** |
-| #4  | client layer: `useTranslation`                                |
+| #3  | server layer: `getLocale`, `getTranslation`, `I18nProvider`   |
+| #4  | client layer: `useTranslation` — **this one**                 |
 | #5  | middleware and Next.js wrappers; Playwright loop tests        |
 | #6  | example app, documentation, first publish                     |
 

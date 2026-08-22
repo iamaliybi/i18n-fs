@@ -25,6 +25,14 @@ export interface I18nContextValue {
 	config: ResolvedI18nFsConfig;
 	/** Namespaces the server rendered with, so the client does not refetch them. */
 	messages: MessagePayload;
+	/**
+	 * Content hash per namespace for this locale, from `.i18n-fs/manifest.json`.
+	 *
+	 * Files under `public/` are served verbatim and are not fingerprinted, so
+	 * this is what lets a fetched namespace be cached immutably and still change
+	 * when the content does.
+	 */
+	manifest: Record<string, string>;
 }
 
 const I18nContext = createContext<I18nContextValue | null>(null);
@@ -44,13 +52,14 @@ export function I18nClientProvider({
 	locale,
 	config,
 	messages,
+	manifest,
 	children,
 }: I18nClientProviderProps) {
 	// The value is rebuilt only when the locale actually changes, so switching
 	// language re-renders consumers and navigation within a locale does not.
 	const value = useMemo<I18nContextValue>(
-		() => ({ locale, config, messages }),
-		[locale, config, messages],
+		() => ({ locale, config, messages, manifest }),
+		[locale, config, messages, manifest],
 	);
 
 	return <I18nContext.Provider value={value}>{children}</I18nContext.Provider>;
