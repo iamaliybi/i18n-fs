@@ -54,15 +54,25 @@ jobs:
           pnpm wasm:sync
           pnpm build
 
+      - name: Note that publishing is disabled
+        if: ${{ !secrets.NPM_TOKEN }}
+        run: |
+          echo "::warning::NPM_TOKEN is not set. The version pull request will           still be opened or updated, but nothing will be published."
+
       # Opens a "Version Packages" pull request when changesets are pending, and
       # publishes when that pull request is merged. `changeset publish` also
       # creates the git tag, so the tag can never name a version that was not
       # actually published.
+      #
+      # Publishing is left out entirely when there is no credential. Versioning
+      # is the useful half and it needs nothing; failing the whole job over a
+      # missing secret would put a red cross on `main` for a state that is
+      # perfectly valid before the first release.
       - name: Version or publish
         uses: changesets/action@v1
         with:
           version: pnpm changeset version
-          publish: pnpm changeset publish
+          publish: ${{ secrets.NPM_TOKEN && 'pnpm changeset publish' || '' }}
           commit: 'chore(release): version packages'
           title: 'chore(release): version packages'
         env:
