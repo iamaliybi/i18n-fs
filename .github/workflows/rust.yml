@@ -1,0 +1,53 @@
+name: Rust
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+concurrency:
+  group: rust-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  CARGO_TERM_COLOR: always
+  RUSTFLAGS: -D warnings
+
+jobs:
+  check:
+    name: fmt, clippy, test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt, clippy
+          targets: wasm32-unknown-unknown
+
+      - uses: Swatinem/rust-cache@v2
+
+      - name: Format
+        run: cargo fmt --all -- --check
+
+      # Both feature sets are linted and tested. The Edge middleware compiles
+      # the crate with --no-default-features, so a change that only builds with
+      # `full` would break it in a way the default build never notices.
+      - name: Clippy (full)
+        run: cargo clippy --workspace --all-targets --all-features -- -D warnings
+
+      - name: Clippy (minimal)
+        run: cargo clippy -p i18n-fs-core --no-default-features --all-targets -- -D warnings
+
+      - name: Test (full)
+        run: cargo test --workspace --all-features
+
+      - name: Test (minimal)
+        run: cargo test -p i18n-fs-core --no-default-features
+
+      - name: Build benchmarks
+        run: cargo bench -p i18n-fs-core --no-run
+
+      - name: Documentation
+        run: cargo doc --workspace --no-deps --all-features

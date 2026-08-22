@@ -1,0 +1,71 @@
+name: Node
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+concurrency:
+  group: node-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    name: wasm, typecheck, test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: wasm32-unknown-unknown
+
+      - uses: Swatinem/rust-cache@v2
+
+      - name: Install wasm-pack
+        uses: jetli/wasm-pack-action@v0.4.0
+        with:
+          version: v0.13.1
+
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+
+      # Also enforces the per-target gzip budgets. The Edge build is the one
+      # that matters: it runs on every request, and nothing should quietly grow
+      # it. See docs/adr/0001-wasm-boundary.md.
+      - name: Build WASM (all three targets)
+        run: pnpm wasm:build
+
+      - name: Sync WASM into the package
+        run: node scripts/sync-wasm.mjs
+
+      - name: Typecheck
+        run: pnpm typecheck
+
+      - name: Build package
+        run: pnpm build
+
+      - name: Test
+        run: pnpm -r test
+
+      # The published layout differs from the source layout: `package.json`
+      # imports resolve to `dist`, and the Node glue needs its CommonJS marker.
+      # Importing the built output is the only way to catch a break in either.
+      - name: Smoke-test the built package
+        working-directory: packages/i18n-fs
+        run: |
+          node --input-type=module -e "
+            const { loadFullCore } = await import('./dist/index.js');
+            const core = await loadFullCore();
+            if (!/^\d+\.\d+\.\d+$/.test(core.coreVersion())) {
+              throw new Error('unexpected core version');
+            }
+            console.log('built package loads:', core.coreVersion());
+          "

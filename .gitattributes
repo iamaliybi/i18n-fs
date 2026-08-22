@@ -1,0 +1,14 @@
+# Normalise to LF in the repository so Windows and Linux contributors do not
+# produce whitespace-only diffs against each other. `cargo fmt` and the
+# .editorconfig both assume LF.
+* text=auto eol=lf
+
+*.wasm binary
+*.png binary
+*.jpg binary
+*.ico binary
+*.woff binary
+*.woff2 binary
+
+pnpm-lock.yaml linguist-generated=true
+Cargo.lock linguist-generated=true

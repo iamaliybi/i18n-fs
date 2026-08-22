@@ -1,0 +1,48 @@
+[package]
+name = "i18n-fs-core"
+description = "Pure logic core for i18n-fs: locale negotiation, route canonicalization, message resolution and formatting."
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+authors.workspace = true
+
+[features]
+# `minimal` (= no default features) is what the Edge middleware bundle compiles.
+# It contains locale negotiation + route canonicalization only.
+default = ["full"]
+# `full` adds message storage and formatting, and with them serde_json.
+full = ["dep:serde_json", "diagnostics"]
+# Config validation and human-readable error rendering. Build-time and
+# request-rendering concerns; the Edge middleware does neither, and their
+# `format!` calls pull a surprising amount of formatting machinery into the
+# binary.
+diagnostics = []
+
+[dependencies]
+serde = { workspace = true }
+serde_json = { workspace = true, optional = true }
+
+[dev-dependencies]
+# Always available to tests, including the `minimal` build where the library
+# itself does not link it.
+serde_json = { workspace = true }
+proptest = "1"
+criterion = { version = "0.5", default-features = false, features = ["cargo_bench_support"] }
+
+[[bench]]
+name = "core_bench"
+harness = false
+# Benchmarks cover store and format too, which only exist in the full build.
+required-features = ["full"]
+
+[lints.rust]
+missing_docs = "warn"
+unsafe_code = "forbid"
+
+[lints.clippy]
+all = { level = "deny", priority = -1 }
+panic = "deny"
+unwrap_used = "deny"
+expect_used = "deny"

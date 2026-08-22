@@ -1,0 +1,25 @@
+{
+  "name": "i18n-fs-monorepo",
+  "private": true,
+  "version": "0.0.0",
+  "packageManager": "pnpm@11.1.2",
+  "engines": {
+    "node": ">=20.11"
+  },
+  "scripts": {
+    "core:fmt": "cargo fmt --all -- --check",
+    "core:lint": "cargo clippy --workspace --all-targets --all-features -- -D warnings",
+    "core:test": "cargo test --workspace --all-features",
+    "core:test:minimal": "cargo test -p i18n-fs-core --no-default-features",
+    "core:bench": "cargo bench -p i18n-fs-core",
+    "wasm:build": "node scripts/build-wasm.mjs",
+    "wasm:size": "node scripts/report-wasm-size.mjs",
+    "build": "pnpm -r build",
+    "typecheck": "pnpm -r typecheck",
+    "changeset": "changeset",
+    "version-packages": "changeset version"
+  },
+  "devDependencies": {
+    "@changesets/cli": "^2.29.7"
+  }
+}
