@@ -174,10 +174,19 @@ CI runs the Rust suites in both feature sets, enforces the per-target gzip
 budgets, and imports the *built* package to catch breaks in the published
 layout that a source-tree test would miss.
 
-## Status
+## Decisions
 
-The foundation and the core are in place. Still to come:
+Every non-obvious choice is written down, with what it cost and what was tried
+first:
 
-| PR  | scope                                                          |
-| --- | -------------------------------------------------------------- |
-| #6  | documentation pass and the first publish                         |
+| ADR | subject |
+| --- | --- |
+| [0001](adr/0001-wasm-boundary.md) | where the Rust/WASM boundary sits, and what it measures |
+| [0002](adr/0002-messages-in-public.md) | why messages live in `public/` and how they are cached |
+| [0003](adr/0003-fallback-policy.md) | uniform fallback, distinct diagnosis |
+| [0004](adr/0004-loop-prevention.md) | preventing redirect loops, and the three bugs the property tests found |
+| [0005](adr/0005-config-snapshot.md) | compiling the config into a snapshot |
+| [0006](adr/0006-cli.md) | the CLI, and why most of it is not Rust |
+| [0007](adr/0007-server-layer.md) | the server layer and the server/client boundary |
+| [0008](adr/0008-client-layer.md) | suspension, and why the promise cache is module-scoped |
+| [0009](adr/0009-middleware-and-navigation.md) | middleware, navigation, and where the WASM actually loads |

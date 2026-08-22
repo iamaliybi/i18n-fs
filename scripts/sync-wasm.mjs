@@ -78,6 +78,36 @@ for (const target of EMBEDDED) {
 			'',
 		].join('\n'),
 	);
+
+	// With the bytes embedded, the binary itself is dead weight — but the glue
+	// still names it in the branch that runs when no bytes are given, and a
+	// bundler resolves `new URL(..., import.meta.url)` statically whether or not
+	// the branch can ever execute. Neutralising the line is what makes the file
+	// safe to drop; the assertion below is what stops a future wasm-bindgen
+	// changing its output shape and turning this into a silent no-op.
+	const gluePath = join(to, target, 'i18n_fs_wasm.js');
+	const glue = readFileSync(gluePath, 'utf8');
+	const DEFAULT_PATH = "module_or_path = new URL('i18n_fs_wasm_bg.wasm', import.meta.url);";
+
+	if (!glue.includes(DEFAULT_PATH)) {
+		throw new Error(
+			`Could not find the default wasm path in ${gluePath}. wasm-bindgen's output ` +
+				'has changed shape; update this patch before dropping the binary.',
+		);
+	}
+
+	writeFileSync(
+		gluePath,
+		glue.replace(
+			DEFAULT_PATH,
+			"throw new Error('[i18n-fs] the " +
+				target +
+				" build must be initialised with explicit bytes');",
+		),
+	);
+
+	rmSync(join(to, target, 'i18n_fs_wasm_bg.wasm'));
+	rmSync(join(to, target, 'i18n_fs_wasm_bg.wasm.d.ts'), { force: true });
 }
 
 console.log(

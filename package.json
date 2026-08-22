@@ -21,7 +21,8 @@
 		"example": "pnpm --filter example-next-app-router build",
 		"example:test": "pnpm --filter example-next-app-router test",
 		"changeset": "changeset",
-		"version-packages": "changeset version"
+		"version-packages": "changeset version",
+		"release": "pnpm wasm:build && pnpm wasm:sync && pnpm build && changeset publish"
 	},
 	"devDependencies": {
 		"@changesets/cli": "^2.29.7"

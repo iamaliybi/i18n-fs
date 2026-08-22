@@ -29,3 +29,7 @@ Thumbs.db
 
 # Example app build output
 examples/*/.next/
+
+# Copied from the repository root at publish time
+packages/i18n-fs/README.md
+packages/i18n-fs/LICENSE
