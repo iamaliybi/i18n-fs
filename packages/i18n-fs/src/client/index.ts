@@ -12,6 +12,16 @@
 export { useTranslation, resetClientReporter } from './useTranslation.js';
 
 export {
+	Link,
+	usePathname,
+	useRouter,
+	useLocaleSwitcher,
+	type LinkProps,
+	type LocaleRouter,
+	type LocaleSwitcher,
+} from './navigation.js';
+
+export {
 	clearNamespaceCache,
 	hasNamespace,
 	loadClientNamespace,

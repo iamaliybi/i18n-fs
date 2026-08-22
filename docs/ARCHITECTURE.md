@@ -42,11 +42,18 @@ them.
 One crate, three outputs. See [ADR 0001](adr/0001-wasm-boundary.md).
 
 ```
-                      cargo features        wasm-pack target
-  edge      middleware   (none)                 bundler
-  browser   client       full                   web
-  node      server, CLI  full + cli             nodejs
+                      cargo features        wasm-pack target   binary
+  edge      middleware   (none)                 web            embedded
+  browser   client       full                   web            fetched
+  node      server, CLI  full + cli             web            embedded
 ```
+
+The Edge and Node binaries are embedded as base64 rather than loaded from disk.
+Neither runtime can be relied on to find a sibling file — bundlers rewrite the
+`__dirname` a Node lookup needs, and the Edge runtime has no base URL to resolve
+a relative one against — and both failures appear only at request time in
+production. The browser keeps a real `.wasm` module, because there the bytes are
+paid for over the network. See [ADR 0009](adr/0009-middleware-and-navigation.md).
 
 The bundler picks one through `package.json#imports` conditions, so no runtime
 branching survives into shipped code. `packages/i18n-fs/src/core/` holds one
@@ -72,6 +79,21 @@ before the app builds:
 `check` is what makes "no cross-language fallback" survivable: without it, a key
 missing from one locale is invisible until a reader of that locale opens the
 page. See [ADR 0006](adr/0006-cli.md).
+
+## Navigation
+
+`i18n-fs/navigation` wraps `next/link` and `next/navigation` so application code
+uses locale-free paths — `/about`, never `/en/about` — and the active locale is
+applied on the way out. Switching routing strategy in the config then touches no
+`href` anywhere.
+
+`useLocaleSwitcher().switchTo()` performs a **full page load**, not a client
+transition: every layout above the switcher was rendered in the old locale, and
+only a fresh request re-runs them.
+
+Building a link has to be synchronous, so `src/paths.ts` mirrors two small
+functions from the Rust core in TypeScript. `test/paths.test.ts` checks that
+mirror against the original across every configuration, so the two cannot drift.
 
 ## Request lifecycle
 
@@ -106,7 +128,9 @@ URL is authoritative — a shared link must render the locale it names.
 | `i18n-fs` | anywhere | the core loader, config types |
 | `i18n-fs/server` | Server Components | `getLocale`, `getTranslation`, `I18nProvider` |
 | `i18n-fs/client` | Client Components | `useTranslation`, `useLocale`, the context |
-| `i18n-fs/config` | build time | `defineConfig` |
+| `i18n-fs/navigation` | Client Components | `Link`, `useRouter`, `usePathname`, `useLocaleSwitcher` |
+| `i18n-fs/middleware` | Edge middleware | `createI18nMiddleware` |
+| `i18n-fs/config` | build time | `defineConfig`, `withI18nFs` |
 
 `i18n-fs/server` reads request headers and the filesystem, so importing it from
 a Client Component is a build error — which is the intent. The provider is a
@@ -156,5 +180,4 @@ The foundation and the core are in place. Still to come:
 
 | PR  | scope                                                          |
 | --- | -------------------------------------------------------------- |
-| #5  | middleware and the Next.js wrappers; Playwright loop tests       |
-| #6  | example app, documentation, first publish                        |
+| #6  | documentation pass and the first publish                         |

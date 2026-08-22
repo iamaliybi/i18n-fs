@@ -38,6 +38,8 @@ export { getTranslation, resetReporter } from './translation.js';
 
 export { I18nProvider, type I18nProviderProps } from './provider.js';
 
+export { getPathname, permanentRedirect, redirect } from './navigation.js';
+
 export type {
 	NamespaceState,
 	TagRenderers,

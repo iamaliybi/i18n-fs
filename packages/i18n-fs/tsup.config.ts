@@ -13,6 +13,8 @@ export default defineConfig({
 		'src/cli/main.ts',
 		'src/server/index.ts',
 		'src/client/index.ts',
+		'src/navigation.ts',
+		'src/middleware.ts',
 	],
 	format: ['esm'],
 	dts: true,
