@@ -96,20 +96,32 @@ Pin the locale for this request. Call it in `app/[locale]/layout.tsx` under the
 `path` strategy — a Server Component cannot read the pathname, so it has to be
 told. Request-scoped through React's `cache()`.
 
-### `<I18nProvider namespaces? locale?>`
+### `<I18nProvider namespaces? prefetch? locale?>`
 
 A Server Component that hands the locale and the named namespaces to the client
-tree. Render it in your locale layout.
+tree. Usually in your locale layout; it can also go lower, per route.
 
-`namespaces` is only for **Client** Components; Server Components load what they
-need themselves. Anything a Client Component reads on first paint belongs here,
-or it will render its fallback during SSR and fill in after hydration.
+| prop | what it does to the HTML | when the browser has it |
+| --- | --- | --- |
+| `namespaces` | **the JSON is serialised into the document** | before any JavaScript runs |
+| `prefetch` | one `<link rel="preload">`, no bytes | shortly after, in parallel with the JavaScript |
+| neither | nothing | after hydration, when the component asks |
 
-`prefetch` names namespaces to start downloading without putting them in the
-payload: it emits `<link rel="preload">`, so the request goes out with the HTML
-and the HTML does not grow. Use it for a client-only subtree or a panel that
-opens shortly after the page settles. Anything already in `namespaces` is
-skipped.
+Both are only for **Client** Components; Server Components load what they need
+themselves through `getTranslation`.
+
+Anything a Client Component reads on first paint belongs in `namespaces`, or it
+renders its fallback during server rendering and fills in after hydration.
+`prefetch` suits a client-only subtree or a panel that opens shortly after the
+page settles. Anything already in `namespaces` is skipped rather than preloaded
+twice.
+
+**Nesting replaces, it does not extend.** A provider inside another does not
+inherit its namespaces, so an inner one must list everything its subtree reads —
+including anything the outer one already sends. Omitting it still renders, which
+is why it is worth saying: the namespace is fetched over the network instead,
+the same file the server already inlined. See
+[where to put the provider](./translating.md#where-to-put-the-provider).
 
 ### `redirect(href, locale?)` · `permanentRedirect(href, locale?)`
 

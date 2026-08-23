@@ -241,9 +241,17 @@ A Client Component reading a namespace the server did not send **fetches it and
 suspends**. Two ways to deal with that:
 
 ```tsx
-// Pre-load it — no fetch to wait for
+// Send it with the page — no fetch to wait for
 <I18nProvider namespaces={['common', 'home/hero']}>
 ```
+
+**`namespaces` puts the JSON in the HTML.** Not a hint, not a preload — the
+server reads those files and serialises them into the document, so the browser
+already has them before any JavaScript runs. That is why nothing waits, and it
+is also the cost: every visitor carries those bytes whether or not the component
+that reads them ever renders. `prefetch` is the opposite trade — a
+`<link rel="preload">` and no bytes in the HTML. The four options are compared
+[below](#prefetching-so-nothing-waits).
 
 ```tsx
 // Or let it fetch, with a boundary to control what shows meanwhile
@@ -409,6 +417,39 @@ the usual cause is a different namespace string, since `home/aside` and
 The WebAssembly core is a separate matter: it is fetched once per page, by
 whichever Client Component translates first, and prefetching a namespace does
 not start it early.
+
+## Where to put the provider
+
+`<I18nProvider>` usually goes in `app/[locale]/layout.tsx`, above everything.
+That is the simple case: one list of namespaces for the whole app.
+
+It can also go lower — in a route group's layout, or in a single page — when one
+section needs messages the rest of the app does not. A dashboard that ships six
+namespaces to nobody but the dashboard is a real saving.
+
+**A nested provider does not inherit the outer one's namespaces.** It replaces
+the context rather than extending it, so an inner provider must list everything
+its subtree reads:
+
+```tsx
+// app/[locale]/layout.tsx
+<I18nProvider namespaces={['common']}>{children}</I18nProvider>
+
+// app/[locale]/dashboard/layout.tsx — 'common' is listed again on purpose
+<I18nProvider namespaces={['common', 'dashboard/nav', 'dashboard/charts']}>
+	{children}
+</I18nProvider>
+```
+
+Leave `common` out of the inner list and it still works, which is what makes
+this worth stating: a component that reads it will find it in the client cache
+if something above already read it, and **fetch it over the network** if nothing
+has — the same file the server already inlined into the HTML, downloaded again.
+During server rendering that fetch has no origin, so the component renders its
+fallback into the HTML and fills in after hydration.
+
+So: one provider at the root is the default, more than one is a size
+optimisation, and each one lists what its own subtree reads.
 
 ## Caching, and editing messages while the server runs
 

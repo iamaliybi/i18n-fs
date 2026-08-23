@@ -11,10 +11,13 @@
 import { mkdtemp, mkdir, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { cleanup, render, screen } from '@testing-library/react';
-import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import { Suspense } from 'react';
+import { act, cleanup, render, screen } from '@testing-library/react';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { ResolvedI18nFsConfig } from '../src/config.js';
-import { useI18nContext, useLocale } from '../src/client/context.js';
+import { I18nClientProvider, useI18nContext, useLocale } from '../src/client/context.js';
+import { clearNamespaceCache } from '../src/client/namespaces.js';
+import { useTranslation } from '../src/client/useTranslation.js';
 import { I18nProvider } from '../src/server/provider.js';
 import { configureI18n, resetI18nConfig } from '../src/server/config.js';
 
@@ -175,5 +178,100 @@ describe('I18nProvider', () => {
 		} finally {
 			console.error = original;
 		}
+	});
+});
+
+describe('nesting one provider inside another', () => {
+	// Documented in docs/guide/translating.md#where-to-put-the-provider. The
+	// behaviour is surprising enough to pin: the inner provider replaces the
+	// context rather than extending it, so a subtree that reads a namespace the
+	// inner one did not list falls through to the network — fetching the same
+	// file the server already inlined into the HTML.
+	function Reads({ namespace, id }: { namespace: string; id: string }) {
+		const t = useTranslation(namespace);
+		return <span data-testid={id}>{t('title')}</span>;
+	}
+
+	it('does not inherit the outer namespaces', async () => {
+		const fetches: string[] = [];
+		vi.stubGlobal(
+			'fetch',
+			vi.fn(async (url: string) => {
+				fetches.push(String(url));
+				return new Response('{"title":"from the network"}', { status: 200 });
+			}),
+		);
+		clearNamespaceCache();
+
+		await act(async () => {
+			render(
+				<I18nClientProvider
+					locale="fa"
+					config={CONFIG}
+					messages={{ common: { title: 'sent by the outer provider' } }}
+					manifest={{}}
+				>
+					<Suspense fallback={<span>…</span>}>
+						<I18nClientProvider
+							locale="fa"
+							config={CONFIG}
+							messages={{ page: { title: 'sent by the inner provider' } }}
+							manifest={{}}
+						>
+							<Reads namespace="common" id="inner" />
+						</I18nClientProvider>
+					</Suspense>
+				</I18nClientProvider>,
+			);
+		});
+		await act(async () => {
+			await new Promise((resolve) => setTimeout(resolve, 50));
+		});
+
+		expect(screen.getByTestId('inner').textContent).toBe('from the network');
+		expect(fetches).toEqual(['/locales/fa/common.json']);
+
+		vi.unstubAllGlobals();
+	});
+
+	it('costs nothing when something above already read the namespace', async () => {
+		// The saving grace, and the reason this is a size question rather than a
+		// correctness one: the namespace cache is module-scoped and keyed by
+		// locale and name, so the second reader finds it however the first got it.
+		const fetches: string[] = [];
+		vi.stubGlobal(
+			'fetch',
+			vi.fn(async (url: string) => {
+				fetches.push(String(url));
+				return new Response('{"title":"from the network"}', { status: 200 });
+			}),
+		);
+		clearNamespaceCache();
+
+		await act(async () => {
+			render(
+				<I18nClientProvider
+					locale="fa"
+					config={CONFIG}
+					messages={{ common: { title: 'sent by the outer provider' } }}
+					manifest={{}}
+				>
+					<Suspense fallback={<span>…</span>}>
+						<Reads namespace="common" id="outer" />
+						<I18nClientProvider locale="fa" config={CONFIG} messages={{}} manifest={{}}>
+							<Reads namespace="common" id="inner" />
+						</I18nClientProvider>
+					</Suspense>
+				</I18nClientProvider>,
+			);
+		});
+		await act(async () => {
+			await new Promise((resolve) => setTimeout(resolve, 50));
+		});
+
+		expect(screen.getByTestId('inner').textContent).toBe('sent by the outer provider');
+		expect(fetches).toEqual([]);
+
+		vi.unstubAllGlobals();
 	});
 });
