@@ -101,6 +101,46 @@ the compiled core — the two encode the same routing and resolution rules, so a
 mismatch would produce quietly *wrong* output rather than an error. That is the
 one case where stopping is better than continuing.
 
+## How long a failure lasts
+
+A failed load is remembered, so nothing retries on its own. What it takes to
+clear one depends on which side failed — and the console message tells you,
+rather than leaving you to guess:
+
+| where | how long the failure lasts | what clears it |
+| --- | --- | --- |
+| server, development | until the file changes | fix the file |
+| server, production | until the process restarts | restart |
+| client | until the page is reloaded | reload |
+
+Nothing retries automatically on purpose. A component that re-renders is not
+evidence that a missing file has appeared, and re-fetching on every render would
+turn one 404 into a stream of them.
+
+So a transient failure — a file not deployed yet, a network blip — is held for
+the life of that page. That is the trade, and it is why the diagnostic says what
+to do:
+
+```
+[i18n-fs] NAMESPACE_NOT_FOUND (100): could not load namespace "home/hero" for
+locale "fa". (/locales/fa/home/hero.json responded 404; this result is kept
+until the page is reloaded, so reload once it is fixed; if a reload still shows
+it, restart the dev server)
+```
+
+The server says something different, because in development it watches the file:
+
+```
+(ENOENT: no such file or directory; the file is re-read when it changes;
+restart the dev server if this persists)
+```
+
+In production that last part reads `the server keeps this result until it
+restarts` instead, because nothing is watching the file.
+
+Details on what is cached and why are in
+[translating](./translating.md#caching-and-editing-messages-while-the-server-runs).
+
 ## Catching gaps before they ship
 
 ```bash

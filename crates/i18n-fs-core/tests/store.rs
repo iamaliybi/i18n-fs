@@ -278,3 +278,57 @@ fn scopes_include_the_root_and_are_sorted() {
 	sorted.sort_unstable();
 	assert_eq!(scopes, sorted);
 }
+
+// Joining `scope` and `key` happens on the stack when it fits and spills to the
+// heap when it does not. That boundary is invisible from outside — which is
+// exactly why it needs testing: a key one byte too long must resolve to the same
+// value, not be truncated into a different key or silently miss.
+#[test]
+fn resolves_the_same_either_side_of_the_stack_join_boundary() {
+	// The buffer is 192 bytes. These sit well below, exactly on, and above it.
+	for scope_len in [8usize, 100, 190, 191, 300, 4096] {
+		let scope = "s".repeat(scope_len);
+		let key = "k".repeat(40);
+
+		let raw = format!(r#"{{ "{scope}": {{ "{key}": "value" }} }}"#);
+		let store = MessageStore::from_json("fa", "long", &raw).unwrap();
+
+		assert_eq!(
+			store.resolve_text(Some(&scope), &key).unwrap(),
+			"value",
+			"scope of {scope_len} bytes did not resolve"
+		);
+
+		// The unscoped form of the same path must agree, since both produce the
+		// same dotted key by different routes.
+		let joined = format!("{scope}.{key}");
+		assert_eq!(store.resolve_text(None, &joined).unwrap(), "value");
+	}
+}
+
+#[test]
+fn a_long_key_that_is_absent_still_reports_key_not_found() {
+	let scope = "s".repeat(300);
+	let raw = format!(r#"{{ "{scope}": {{ "present": "value" }} }}"#);
+	let store = MessageStore::from_json("fa", "long", &raw).unwrap();
+
+	let error = store.resolve_text(Some(&scope), "absent").unwrap_err();
+	assert_eq!(error.code, ErrorCode::KeyNotFound);
+}
+
+#[test]
+fn a_multibyte_scope_joins_without_corrupting_the_key() {
+	// The join writes bytes, not characters. A scope of Persian text is the
+	// obvious way to notice if that were done wrong.
+	let raw = r#"{ "صفحه‌اصلی": { "عنوان": "خوش آمدید" } }"#;
+	let store = MessageStore::from_json("fa", "fa-keys", raw).unwrap();
+
+	assert_eq!(
+		store.resolve_text(Some("صفحه‌اصلی"), "عنوان").unwrap(),
+		"خوش آمدید"
+	);
+	assert_eq!(
+		store.resolve_text(None, "صفحه‌اصلی.عنوان").unwrap(),
+		"خوش آمدید"
+	);
+}

@@ -144,6 +144,31 @@ if (codes.length !== Object.keys(NAMES).length) {
 	problems.push(`errors.ts defines ${codes.length} codes; expected ${Object.keys(NAMES).length}`);
 }
 
+// The guide quotes the advice these diagnostics print. Quoted output is worse
+// than none once it drifts: the reader searches the console for a sentence that
+// is not there any more and concludes they are looking at the wrong problem.
+const ADVICE = [
+	['src/client/namespaces.ts', 'this result is kept until the page is reloaded'],
+	['src/client/namespaces.ts', 'if a reload still shows it, restart the dev server'],
+	['src/server/messages.ts', 'the file is re-read when it changes; restart the dev server if this persists'],
+	['src/server/messages.ts', 'the server keeps this result until it restarts'],
+];
+
+// Compared with whitespace collapsed, so prose stays free to wrap: the sentence
+// is the contract, not where the line happens to break.
+const flat = (text) => text.replace(/\s+/g, ' ');
+const flatDoc = flat(errorsDoc);
+
+for (const [file, sentence] of ADVICE) {
+	if (!flat(readFileSync(join(pkg, file), 'utf8')).includes(flat(sentence))) {
+		problems.push(`${file} no longer prints "${sentence}", which docs/guide/errors.md quotes`);
+	}
+
+	if (!flatDoc.includes(flat(sentence))) {
+		problems.push(`docs/guide/errors.md does not quote "${sentence}" from ${file}`);
+	}
+}
+
 if (problems.length) {
 	console.error('Documentation does not match the package:\n');
 	for (const problem of problems) console.error(`  - ${problem}`);

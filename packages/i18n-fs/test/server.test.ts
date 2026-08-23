@@ -6,7 +6,7 @@
  * against real files, because reading them is the whole job.
  */
 
-import { mkdtemp, mkdir, rm, writeFile } from 'node:fs/promises';
+import { mkdtemp, mkdir, rm, utimes, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterEach, describe, expect, it } from 'vitest';
@@ -197,6 +197,65 @@ describe('loading namespaces', () => {
 		const second = await loadNamespace(CONFIG, 'fa', 'home', root);
 
 		expect(second).toBe(first);
+	});
+
+	it('re-reads a namespace whose file changed, in development', async () => {
+		// Message files live under `public/`, so editing one reloads no module and
+		// Next.js has nothing to re-run. Without this the developer edits a
+		// translation, sees the old text, and blames the package.
+		const root = await project({ 'public/locales/fa/home.json': JSON.stringify({ a: '1' }) });
+		const debug = { ...CONFIG, debug: true };
+		const file = join(root, 'public/locales/fa/home.json');
+
+		const first = await loadNamespace(debug, 'fa', 'home', root);
+		expect(first.status).toBe('ready');
+		if (first.status === 'ready') expect(first.store.resolveText(undefined, 'a')).toBe('1');
+
+		await writeFile(file, JSON.stringify({ a: '2' }), 'utf8');
+
+		// Timestamps have millisecond resolution, and two writes inside one
+		// millisecond are indistinguishable — so the change is made explicit
+		// rather than left to how fast the machine happens to be.
+		const later = new Date(Date.now() + 2000);
+		await utimes(file, later, later);
+
+		const second = await loadNamespace(debug, 'fa', 'home', root);
+		expect(second.status).toBe('ready');
+		if (second.status === 'ready') expect(second.store.resolveText(undefined, 'a')).toBe('2');
+	});
+
+	it('keeps the cached namespace in production even when the file changes', async () => {
+		// The mirror of the test above: outside development nothing is stat-ed,
+		// because the files cannot change under a running build and a stat per
+		// render per namespace would be pure loss.
+		const root = await project({ 'public/locales/fa/home.json': JSON.stringify({ a: '1' }) });
+		const file = join(root, 'public/locales/fa/home.json');
+
+		const first = await loadNamespace(CONFIG, 'fa', 'home', root);
+
+		await writeFile(file, JSON.stringify({ a: '2' }), 'utf8');
+		const later = new Date(Date.now() + 2000);
+		await utimes(file, later, later);
+
+		expect(await loadNamespace(CONFIG, 'fa', 'home', root)).toBe(first);
+	});
+
+	it('says what clears a failure, differently per environment', async () => {
+		const root = await project({});
+
+		const production = await loadNamespace(CONFIG, 'fa', 'home', root);
+		expect(production.status).toBe('failed');
+		if (production.status === 'failed') {
+			expect(production.error.detail).toContain('the server keeps this result until it restarts');
+		}
+
+		clearMessageCache();
+
+		const development = await loadNamespace({ ...CONFIG, debug: true }, 'fa', 'home', root);
+		expect(development.status).toBe('failed');
+		if (development.status === 'failed') {
+			expect(development.error.detail).toContain('the file is re-read when it changes');
+		}
 	});
 
 	it('does not cache failures in debug mode', async () => {

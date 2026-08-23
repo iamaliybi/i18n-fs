@@ -66,6 +66,7 @@ interface HarnessOptions {
 	manifest?: Record<string, string>;
 	namespace?: string;
 	scope?: string;
+	config?: typeof CONFIG;
 }
 
 type HarnessProps = HarnessOptions & { render: (t: Translator) => ReactNode };
@@ -75,6 +76,7 @@ function Harness({
 	manifest = {},
 	namespace = 'home/hero',
 	scope,
+	config = CONFIG,
 	render: renderProp,
 }: HarnessProps) {
 	function Consumer() {
@@ -83,7 +85,7 @@ function Harness({
 	}
 
 	return (
-		<I18nClientProvider locale="fa" config={CONFIG} messages={messages} manifest={manifest}>
+		<I18nClientProvider locale="fa" config={config} messages={messages} manifest={manifest}>
 			<Suspense fallback={<span data-testid="loading">loading</span>}>
 				<Consumer />
 			</Suspense>
@@ -157,6 +159,45 @@ describe('namespaces the client has to fetch', () => {
 	it('fetches without a hash when the manifest has none', async () => {
 		await show({ render: (t) => t('title') });
 		expect(fetchMock).toHaveBeenCalledWith('/locales/fa/home/hero.json');
+	});
+
+	it('bypasses the browser cache in development', async () => {
+		// The URL's content hash comes from the build manifest, which is written
+		// before `next dev` starts and does not move while messages are edited.
+		// Without this the browser answers a reload from its own cache and the
+		// edit looks like it did nothing.
+		await show({
+			config: { ...CONFIG, debug: true },
+			manifest: { 'home/hero': 'abc12345' },
+			render: (t) => t('title'),
+		});
+
+		expect(fetchMock).toHaveBeenCalledWith('/locales/fa/home/hero.json?v=abc12345', {
+			cache: 'no-store',
+		});
+	});
+
+	it('says how to clear a failed fetch', async () => {
+		// Nothing retries by itself, so the console has to say what does.
+		fetchMock.mockResolvedValueOnce(new Response('nope', { status: 404 }));
+
+		const errors: string[] = [];
+		const spy = vi.spyOn(console, 'error').mockImplementation((...args: unknown[]) => {
+			errors.push(args.join(' '));
+		});
+
+		const out = await show({ config: { ...CONFIG, debug: true }, render: (t) => t('title') });
+
+		// The reader still gets the key, never a blank or another language.
+		expect(out.textContent).toBe('title');
+
+		const message = errors.join(' ');
+		expect(message).toContain('NAMESPACE_NOT_FOUND');
+		expect(message).toContain('responded 404');
+		expect(message).toContain('this result is kept until the page is reloaded');
+		expect(message).toContain('restart the dev server');
+
+		spy.mockRestore();
 	});
 
 	it('fetches a namespace once however many components ask for it', async () => {

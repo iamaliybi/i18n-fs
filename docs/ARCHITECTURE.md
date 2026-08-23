@@ -153,6 +153,21 @@ The folder layout beneath the locale directory is entirely the developer's.
 `i18n-fs` imposes no structure and no shared-key convention; a developer who
 wants shared keys injects them.
 
+A namespace is parsed **once** and flattened into a dotted index —
+`HashMap<String, Leaf>` for values, plus a set of the object paths — so `a.b.c`
+is a single hash lookup, not a walk down three objects. The set of containers is
+kept separately because it is what distinguishes `SCOPE_NOT_FOUND` from
+`KEY_NOT_FOUND` from "this key is an object, not a message". A `scope` is only a
+prefix: an unscoped lookup hashes the caller's key directly, and a scoped one
+joins the two halves on the stack rather than allocating per lookup.
+
+Each side caches the parsed result: the server per process and per locale, the
+client per page load in module scope — the latter has to be module-scoped
+because React's `use()` identifies a suspended read by promise identity
+([ADR 0008](adr/0008-client-layer.md)). In development the server re-reads a
+file whose timestamp changed, since editing something under `public/` reloads no
+module.
+
 Failure behaviour is uniform — the developer's fallback string, otherwise the
 key — while diagnosis is precise. See [ADR 0003](adr/0003-fallback-policy.md).
 

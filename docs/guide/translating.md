@@ -255,7 +255,58 @@ suspends**. Two ways to deal with that:
 Pre-loading is usually right for anything above the fold. Fetching is right for
 a namespace only one rarely-opened panel needs.
 
+### What actually disappears while it loads
+
+Not just the component that called `useTranslation`. Suspending unwinds to the
+**nearest `<Suspense>` boundary above it**, and that boundary's entire subtree is
+replaced by its fallback:
+
+```tsx
+<Suspense fallback={<PageSkeleton />}>   {/* ← everything here is replaced */}
+	<Header />
+	<Article />
+	<Sidebar />                            {/* ← only this one is waiting */}
+</Suspense>
+```
+
+With no boundary anywhere above it, the suspension reaches the route and the
+whole page waits. So put the boundary immediately around the part that fetches:
+
+```tsx
+<Header />
+<Article />
+<Suspense fallback={<SidebarSkeleton />}>
+	<Sidebar />
+</Suspense>
+```
+
+The reader never sees empty text that later fills in — they see the fallback,
+then the finished component. A namespace already in `namespaces` does not suspend
+at all, so pre-loading sidesteps the question entirely.
+
 **During server rendering a client fetch has no origin**, so a namespace that was
 not sent renders its fallback in the HTML and only fills in after hydration. The
 console says so, and names the fix. Anything a Client Component reads on first
 paint belongs in `namespaces`.
+
+## Caching, and editing messages while the server runs
+
+| | server | client |
+| --- | --- | --- |
+| read by | `fs`, no HTTP | `fetch` from `public/`, with `?v=<hash>` |
+| cached | per process, per locale | per page load, in module scope |
+| after you edit a file | re-read on the next render | reload the page |
+
+In development the server compares the file's timestamp before trusting its
+cache, so editing a message file shows up on the next render. That check exists
+because message files live under `public/`: editing one changes no module, so
+Next.js has nothing to reload and would otherwise keep serving the old text until
+you restarted. In production nothing is stat-ed — the files cannot change under a
+running build.
+
+The client fetches with `cache: 'no-store'` in development for the same reason:
+the content hash in the URL comes from the build manifest, which does not move
+while you are editing, so the browser would otherwise serve its cached copy.
+
+If a change still does not appear after a reload, restart the dev server — the
+console diagnostics say so too.
