@@ -1,0 +1,25 @@
+{
+	"extends": "../../tsconfig.base.json",
+	"compilerOptions": {
+		"noEmit": true,
+		"jsx": "preserve",
+		"plugins": [{ "name": "next" }],
+		"allowJs": true,
+		"incremental": true,
+		// Two React majors live in this repository: the other two examples are on
+		// 19, this one is on 18. Without this, `i18n-fs`'s own declarations
+		// resolve the hoisted `@types/react@19` while this app's JSX resolves its
+		// own 18 — and `ReactNode` from one is not assignable to `ReactNode` from
+		// the other, so `t.rich` fails to type-check here and nowhere else.
+		//
+		// An installed copy of the package has exactly one `@types/react` and
+		// needs none of this. It is a workspace artefact, not something a user
+		// has to do.
+		"paths": {
+			"react": ["./node_modules/@types/react"],
+			"react-dom": ["./node_modules/@types/react-dom"]
+		}
+	},
+	"include": ["**/*.ts", "**/*.tsx", "**/*.mjs", ".next/types/**/*.ts"],
+	"exclude": ["node_modules", ".next"]
+}

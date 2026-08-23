@@ -1,0 +1,25 @@
+{
+	"name": "example-next-14-react-18",
+	"private": true,
+	"version": "0.0.0",
+	"type": "module",
+	"scripts": {
+		"i18n": "i18n-fs build --strict",
+		"dev": "npm run i18n && next dev",
+		"build": "npm run i18n && next build",
+		"start": "next start",
+		"test": "node --test e2e/*.test.mjs"
+	},
+	"dependencies": {
+		"i18n-fs": "*",
+		"next": "14.2.33",
+		"react": "18.3.1",
+		"react-dom": "18.3.1"
+	},
+	"devDependencies": {
+		"@types/react": "^18.3.0",
+		"typescript": "^5.9.3",
+		"@types/react-dom": "^18.3.0"
+	},
+	"description": "Next.js 15 with the middleware file convention."
+}
