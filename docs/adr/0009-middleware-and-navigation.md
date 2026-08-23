@@ -8,7 +8,7 @@ Date: 2026-08-23
 This is where the design meets Next.js. Everything before it was testable in
 isolation; the middleware, the navigation wrappers and the WebAssembly loading
 only tell the truth against a running application. Building
-`examples/next-app-router` was not documentation work — it is what surfaced four
+`examples/next-16-proxy` was not documentation work — it is what surfaced four
 of the five decisions below, none of which any unit test had a chance of
 catching.
 

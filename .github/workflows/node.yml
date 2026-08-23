@@ -158,11 +158,15 @@ jobs:
           node scripts/relink.mjs
           pnpm install --frozen-lockfile
 
-      # The example is part of the test suite, not a sample. It is the only
+      # The examples are part of the test suite, not samples. They are the only
       # place the real matcher, the real Edge runtime and the real WebAssembly
       # binary meet — and every one of those has already failed here in a way no
       # unit test could see.
-      - name: Build the example
+      #
+      # There are two because the file convention changed: Next.js 16 uses
+      # `proxy`, Next.js 15 uses `middleware`. Both run the same assertions from
+      # examples/shared, so "it works on both" is proven rather than assumed.
+      - name: Build the examples
         run: pnpm example
 
       - name: End-to-end routing

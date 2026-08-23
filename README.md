@@ -134,12 +134,20 @@ cargo test -p i18n-fs-core --no-default-features
 pnpm typecheck && pnpm build && pnpm test
 ```
 
-The example app is part of the test suite, not a sample — it is the only place
-the real matcher, the real Next.js runtime and the real WebAssembly binary meet:
+The example apps are part of the test suite, not samples — they are the only
+place the real matcher, the real Next.js runtime and the real WebAssembly binary
+meet. There are two because the file convention changed between Next.js majors,
+and both run the same assertions, so behaving identically across them is proven
+rather than assumed:
 
 ```bash
 pnpm example && pnpm example:test
 ```
+
+| | | |
+| --- | --- | --- |
+| `examples/next-16-proxy` | Next.js 16 | `proxy.ts` |
+| `examples/next-15-middleware` | Next.js 15 | `middleware.ts` |
 
 ## Contributing
 

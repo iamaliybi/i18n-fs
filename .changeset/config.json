@@ -8,6 +8,7 @@
   "baseBranch": "main",
   "updateInternalDependencies": "patch",
   "ignore": [
-    "example-next-app-router"
+    "example-next-16-proxy",
+    "example-next-15-middleware"
   ]
 }
