@@ -241,10 +241,12 @@ a namespace on demand:
   `proxy.ts`
 - [`examples/next-15-middleware`](../../examples/next-15-middleware) — Next.js 15
   with `middleware.ts`
+- [`examples/next-14-react-18`](../../examples/next-14-react-18) — Next.js 14.2
+  with React 18, the floor of the supported range
 
-They are part of the test suite, not samples. Both run the same assertions from
-[`examples/shared`](../../examples/shared), so "it works on both" is proven
-rather than assumed — and they are where the real proxy, the real Next.js
+They are part of the test suite, not samples. All three run the same assertions
+from [`examples/shared`](../../examples/shared), so "it works on all of them" is
+proven rather than assumed — and they are where the real proxy, the real Next.js
 runtime and the real WebAssembly binary are verified together.
 
 ## Where to go next

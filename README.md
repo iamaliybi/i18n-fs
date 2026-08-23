@@ -212,10 +212,14 @@ rather than assumed:
 npm run example && npm run example:test
 ```
 
-| | | |
-| --- | --- | --- |
-| `examples/next-16-proxy` | Next.js 16 | `proxy.ts` |
-| `examples/next-15-middleware` | Next.js 15 | `middleware.ts` |
+| | | | |
+| --- | --- | --- | --- |
+| `examples/next-16-proxy` | Next.js 16 | React 19 | `proxy.ts` |
+| `examples/next-15-middleware` | Next.js 15 | React 19 | `middleware.ts` |
+| `examples/next-14-react-18` | Next.js 14.2 | React 18 | `middleware.ts` |
+
+The third is the floor of `peerDependencies`, and it earns its place: it is the
+only one that tests `react@18`.
 
 ## Contributing
 

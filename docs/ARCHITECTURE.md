@@ -209,10 +209,16 @@ CI runs the Rust suites in both feature sets, enforces the per-target gzip
 budgets, and imports the *built* package to catch breaks in the published
 layout that a source-tree test would miss.
 
-Two example apps run end to end: `next-16-proxy` and `next-15-middleware`. The
-file convention changed between those Next.js majors, and both run the same
-assertions from `examples/shared`, so behaving identically across them is proven
-rather than assumed.
+Three example apps run end to end: `next-16-proxy`, `next-15-middleware` and
+`next-14-react-18`. They span both file conventions and both ends of the
+supported range, and all three run the same assertions from `examples/shared`,
+so behaving identically across them is proven rather than assumed.
+
+The Next.js 14 app is there for one claim in particular. `useTranslation` calls
+React's `use()`, which is not in the React 18 release — it works because the App
+Router does not run the React in your `package.json`: Next vendors its own, and
+14.2 vendors `18.3.0-canary` with `use()` in it. That was true by inference
+until this app checked it.
 
 ## Decisions
 
