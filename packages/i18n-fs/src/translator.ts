@@ -8,7 +8,7 @@
  */
 
 import { createElement, Fragment, type ReactNode } from 'react';
-import type { FullCore, I18nErrorPayload, MessageNode, Store } from './core/types.js';
+import type { I18nErrorPayload, MessageCore, MessageNode, Store } from './core/types.js';
 import type { Reporter } from './report.js';
 import { ErrorCode } from './errors.js';
 
@@ -55,7 +55,7 @@ export interface Translator {
 
 /** Everything the translator needs, supplied by whichever layer built it. */
 export interface TranslatorContext {
-	core: FullCore;
+	core: MessageCore;
 	locale: string;
 	namespace: string;
 	scope?: string | undefined;

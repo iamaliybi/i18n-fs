@@ -97,12 +97,28 @@ export interface EdgeCore {
 	domainForLocale(config: unknown, locale: string): string | undefined;
 }
 
-/** The full core: everything in {@link EdgeCore} plus messages and formatting. */
-export interface FullCore extends EdgeCore {
-	validateConfig(config: unknown): ConfigIssue[];
+/**
+ * Message storage and formatting, with no routing.
+ *
+ * This is what the browser binary carries. A visitor downloads it, and nothing
+ * in the browser routes — `<Link>` and `usePathname` are answered by a
+ * TypeScript mirror of the same rules so they stay synchronous, and every
+ * redirect decision is made by the proxy before the page is served. Compiling
+ * routing in anyway cost 34 KB gzip that no browser executed.
+ */
+export interface MessageCore {
+	coreVersion(): string;
 	Store: new (locale: string, namespace: string, raw: string) => Store;
 	interpolate(template: string, params?: Record<string, string>): Interpolation;
 	tokenize(template: string): MessageNode[];
+}
+
+/**
+ * Both halves. Only the Node binary carries them, because only the server needs
+ * to route *and* resolve messages in the same process.
+ */
+export interface FullCore extends EdgeCore, MessageCore {
+	validateConfig(config: unknown): ConfigIssue[];
 }
 
 /** What shape a key holds. */
@@ -140,4 +156,4 @@ export interface CliCore extends Omit<FullCore, 'Store'> {
  * TypeScript resolves only one variant when type-checking, and a literal type
  * would make the capability check look like dead code.
  */
-export type Capability = 'edge' | 'full';
+export type Capability = 'edge' | 'messages' | 'full';

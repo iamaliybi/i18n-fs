@@ -39,7 +39,7 @@ const BUILDS = [
 		// /_next/static/wasm/....wasm" on the first request. The web glue takes
 		// the bytes as an argument instead, and `sync-wasm.mjs` embeds them.
 		target: 'web',
-		features: [],
+		features: ['routing'],
 		// Measured baseline, not an aspiration. Breakdown at the time of writing:
 		//   wasm-bindgen glue alone .................  6.3 KB gzip
 		//   + serde-wasm-bindgen config bridging .... 32.7 KB gzip
@@ -53,18 +53,15 @@ const BUILDS = [
 	{
 		name: 'browser',
 		target: 'web',
+		// No `routing`. This is the only binary a visitor downloads, and it never
+		// routes: `<Link>` and `usePathname` are answered by a TypeScript mirror
+		// of the same rules so they stay synchronous, and every redirect decision
+		// is made by the proxy before the page is served. Compiling routing in
+		// cost 34 KB gzip that no browser ever executed.
 		features: ['full'],
-		// Re-baselined from 90 KB, deliberately rather than because a build went
-		// red: removing the per-lookup allocation cost 0.5 KB gzip and left about
-		// 100 bytes of headroom, so the next change to any `full` code would have
-		// broken CI for a reason unrelated to it. A budget that has to be raised
-		// under pressure is not measuring anything.
-		//
-		// This is the binary a browser downloads, so it is the one where growth
-		// is worth arguing about. The Edge binary — the one that runs on every
-		// request — is unaffected by anything under `full` and has its own budget
-		// above.
-		budgetKb: 95,
+		// Measured after that removal, not a target. It was 95 KB when the binary
+		// carried routing as well.
+		budgetKb: 60,
 	},
 	{
 		name: 'node',
@@ -79,16 +76,18 @@ const BUILDS = [
 		// each holds — for the build-time CLI. It is in this build and not the
 		// browser one because the browser resolves messages, it never enumerates
 		// them, and this binary is read from disk rather than downloaded.
-		features: ['full', 'cli'],
+		features: ['full', 'cli', 'routing'],
 		budgetKb: 100,
 	},
 ];
 
 function build({ name, target, features }) {
 	const outDir = join('pkg', name);
-	const cargoArgs = features.length
-		? ['--features', features.join(',')]
-		: ['--no-default-features'];
+	// Always --no-default-features. Every build names exactly what it needs, so
+	// a feature added to `default` later cannot quietly land in the binary a
+	// visitor downloads — which is precisely how routing got there.
+	const cargoArgs = ['--no-default-features'];
+	if (features.length) cargoArgs.push('--features', features.join(','));
 
 	console.log(`\n=== ${name} (target: ${target}, features: ${features.join(',') || 'minimal'})`);
 

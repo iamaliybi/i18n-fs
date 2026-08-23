@@ -5,7 +5,7 @@
  * translator, so a lookup behaves identically on the server and in the browser.
  */
 
-import { loadFullCore } from '../core/index.js';
+import { loadMessageCore } from '../core/index.js';
 import { createReporter, type Reporter } from '../report.js';
 import { createTranslator, type Translator } from '../translator.js';
 import { getI18nConfig } from './config.js';
@@ -43,7 +43,7 @@ function getReporter(debug: boolean): Reporter {
 export async function getTranslation(namespace: string, scope?: string): Promise<Translator> {
 	const [config, core, locale] = await Promise.all([
 		getI18nConfig(),
-		loadFullCore(),
+		loadMessageCore(),
 		getLocale(),
 	]);
 

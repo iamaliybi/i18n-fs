@@ -12,8 +12,14 @@ authors.workspace = true
 crate-type = ["cdylib", "rlib"]
 
 [features]
-# Mirrors i18n-fs-core. The `edge` build compiles with --no-default-features.
-default = ["full"]
+# Two independent halves, because the three consumers need different pairs of
+# them: the proxy routes but never resolves messages, the browser resolves
+# messages but never routes, and only Node does both. Nothing here is additive
+# for its own sake — a function compiled in is bytes downloaded.
+default = ["full", "routing"]
+# Locale negotiation, route canonicalisation and config validation.
+routing = []
+# Message storage and formatting.
 full = ["i18n-fs-core/full", "diagnostics"]
 diagnostics = ["i18n-fs-core/diagnostics"]
 cli = ["full", "i18n-fs-core/cli"]
