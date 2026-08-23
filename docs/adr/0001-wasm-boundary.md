@@ -90,6 +90,14 @@ Until then `scripts/build-wasm.mjs` enforces a 65 KB gzip budget on the Edge
 build so it cannot drift upward unnoticed. The budget is a measured baseline,
 not a target we met.
 
+The browser and node builds carry their own budgets for the same reason. The
+browser one was re-baselined from 90 KB to 95 KB in 0.3.0: removing the
+per-lookup allocation cost 0.5 KB gzip and left roughly 100 bytes of headroom,
+which would have made the next unrelated change to `full` code fail CI for the
+wrong reason. Raising a budget is a decision to record, not a step to take when
+a build turns red — and it says nothing about the Edge build, which contains no
+`full` code at all.
+
 ## Consequences
 
 - Every function in the core must justify its place. `cargo bench` covers the
