@@ -165,3 +165,11 @@ jobs:
 
       - name: End-to-end routing
         run: npm run example:test
+
+      # The README publishes what the package costs a visitor. Numbers in prose
+      # rot silently — a reader has no way to tell a stale figure from a true
+      # one — so they are generated and then compared here against the binaries
+      # that were just built. This job is the one that has them, because it is
+      # the one that builds the example apps.
+      - name: Check the documented sizes
+        run: npm run measure:check
