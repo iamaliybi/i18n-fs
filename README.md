@@ -104,6 +104,26 @@ Expect the last decimal to move: the Rust toolchain is not byte-identical across
 operating systems, so the same commit built on Linux and on Windows differs by a
 few tenths of a kilobyte.
 
+### You pay for what you import
+
+The package is marked free of side effects, so a bundler keeps only what you
+actually use. Measured by bundling one import at a time:
+
+| import | cost |
+| --- | --- |
+| `ErrorCode`, `VERSION`, `defineConfig` from `i18n-fs` | under 1 KB |
+| `Link`, `useRouter`, `usePathname`, `useLocaleSwitcher` | 1–2 KB, **no WebAssembly** |
+| `useLocale`, `useI18nContext` | ~2 KB, **no WebAssembly** |
+| `useTranslation` | the core, because resolving a message needs it |
+
+Navigation carries no binary because `addLocale` and `stripLocale` are mirrored
+in TypeScript — the reason `<Link>` can stay synchronous is also the reason it
+costs nothing. An example app that navigates and switches locale on the client
+but translates only on the server emits **no `.wasm` at all**.
+
+`test/tree-shaking.test.ts` bundles each import and fails if one of them starts
+pulling the core, because the only symptom otherwise is a larger download.
+
 ## Quick look
 
 ```ts
