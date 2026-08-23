@@ -2,12 +2,11 @@
 	"name": "i18n-fs-monorepo",
 	"private": true,
 	"version": "0.0.0",
-	"packageManager": "pnpm@11.1.2",
 	"engines": {
 		"node": ">=20.11"
 	},
 	"scripts": {
-		"bootstrap": "pnpm install && pnpm wasm:build && pnpm wasm:sync && pnpm build && node scripts/relink.mjs && pnpm install",
+		"bootstrap": "npm install && npm run wasm:build && npm run wasm:sync && npm run build",
 		"core:fmt": "cargo fmt --all -- --check",
 		"core:lint": "cargo clippy --workspace --all-targets --all-features -- -D warnings",
 		"core:test": "cargo test --workspace --all-features",
@@ -15,17 +14,22 @@
 		"core:bench": "cargo bench -p i18n-fs-core",
 		"wasm:build": "node scripts/build-wasm.mjs",
 		"wasm:sync": "node scripts/sync-wasm.mjs",
-		"build": "pnpm --filter i18n-fs build",
-		"typecheck": "pnpm --filter i18n-fs typecheck",
+		"build": "npm run build --workspace=i18n-fs",
+		"typecheck": "npm run typecheck --workspace=i18n-fs",
 		"check:docs": "node scripts/check-docs.mjs",
-		"test": "pnpm --filter i18n-fs test",
-		"example": "pnpm --filter \"./examples/*\" build",
-		"example:test": "pnpm --filter \"./examples/*\" test",
+		"test": "npm run test --workspace=i18n-fs",
+		"example": "npm run build --workspace=example-next-16-proxy --workspace=example-next-15-middleware",
+		"example:test": "npm run test --workspace=example-next-16-proxy --workspace=example-next-15-middleware",
 		"changeset": "changeset",
-		"version-packages": "changeset version",
-		"release": "pnpm wasm:build && pnpm wasm:sync && pnpm build && changeset publish"
+		"changeset:version": "changeset version",
+		"changeset:publish": "changeset publish",
+		"release": "npm run wasm:build && npm run wasm:sync && npm run build && changeset publish"
 	},
 	"devDependencies": {
 		"@changesets/cli": "^2.29.7"
-	}
+	},
+	"workspaces": [
+		"packages/*",
+		"examples/*"
+	]
 }

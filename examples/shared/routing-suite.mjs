@@ -22,7 +22,8 @@
 import assert from 'node:assert/strict';
 import { spawn } from 'node:child_process';
 import { after, before, describe, it } from 'node:test';
-import { join } from 'node:path';
+import { createRequire } from 'node:module';
+import { dirname, join } from 'node:path';
 
 /**
  * Register the whole suite against one example app.
@@ -74,12 +75,24 @@ export function describeRouting({ root, port, label }) {
 
 	let server;
 
+	/**
+	 * Where this example's Next.js actually lives.
+	 *
+	 * Not `<example>/node_modules/next`: a package manager is free to hoist a
+	 * dependency to the workspace root, and with two examples on two Next.js
+	 * majors exactly one of them gets hoisted. Resolving from the example's own
+	 * manifest finds the right copy either way.
+	 */
+	function nextBin() {
+		const resolve = createRequire(join(root, 'package.json')).resolve;
+		return join(dirname(resolve('next/package.json')), 'dist', 'bin', 'next');
+	}
+
 	before(async () => {
-		server = spawn(
-			process.execPath,
-			[join(root, 'node_modules', 'next', 'dist', 'bin', 'next'), 'start', '-p', String(port)],
-			{ cwd: root, stdio: ['ignore', 'pipe', 'pipe'] },
-		);
+		server = spawn(process.execPath, [nextBin(), 'start', '-p', String(port)], {
+			cwd: root,
+			stdio: ['ignore', 'pipe', 'pipe'],
+		});
 
 		server.stderr.on('data', (chunk) => process.stderr.write(chunk));
 

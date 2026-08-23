@@ -15,7 +15,7 @@ const TARGETS = ['edge', 'browser', 'node'];
 const SKIP = new Set(['package.json', 'README.md', '.gitignore', 'LICENSE']);
 
 if (!existsSync(from)) {
-	console.error('No wasm build found. Run `pnpm wasm:build` first.');
+	console.error('No wasm build found. Run `npm run wasm:build` first.');
 	process.exit(1);
 }
 
@@ -24,7 +24,7 @@ rmSync(to, { recursive: true, force: true });
 for (const target of TARGETS) {
 	const source = join(from, target);
 	if (!existsSync(source)) {
-		console.error(`Missing wasm build for ${target}. Run \`pnpm wasm:build\`.`);
+		console.error(`Missing wasm build for ${target}. Run \`npm run wasm:build\`.`);
 		process.exit(1);
 	}
 
