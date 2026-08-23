@@ -50,6 +50,7 @@ export { getPathname, permanentRedirect, redirect } from './navigation.js';
 
 export type {
 	NamespaceState,
+	RichTranslationParams,
 	TagRenderers,
 	TranslateOptions,
 	TranslationParams,

@@ -43,10 +43,19 @@ One crate, three outputs. See [ADR 0001](adr/0001-wasm-boundary.md).
 
 ```
                       cargo features        wasm-pack target   binary
-  edge      middleware   (none)                 web            embedded
+  edge      proxy        routing                web            embedded
   browser   client       full                   web            fetched
-  node      server, CLI  full + cli             web            embedded
+  node      server, CLI  full + cli + routing   web            embedded
 ```
+
+Routing and messages are separate features because each consumer needs one of
+them and only Node needs both. **The browser binary carries no routing**: it is
+the only one a visitor downloads, and nothing in the browser routes — `<Link>`
+and `usePathname` are answered by a TypeScript mirror of the same rules so they
+can stay synchronous, and every redirect decision is made by the proxy before
+the page is served. Compiling routing in anyway cost 34 KB gzip that no browser
+executed. Every build passes `--no-default-features` and names what it needs, so
+a feature added to `default` cannot land in the download by accident.
 
 The Edge and Node binaries are embedded as base64 rather than loaded from disk.
 Neither runtime can be relied on to find a sibling file — bundlers rewrite the
@@ -57,9 +66,19 @@ paid for over the network. See [ADR 0009](adr/0009-middleware-and-navigation.md)
 
 The bundler picks one through `package.json#imports` conditions, so no runtime
 branching survives into shipped code. `packages/i18n-fs/src/core/` holds one
-loader per target behind a single `loadCore()` / `loadFullCore()` interface;
-`loadFullCore()` rejects in the Edge runtime with an explanation rather than
-failing as `undefined is not a function`.
+loader per target, reached through whichever of these matches what you are
+asking for:
+
+| loader | surface | available in |
+| --- | --- | --- |
+| `loadCore()` | routing and negotiation | proxy, server |
+| `loadMessageCore()` | messages and formatting | browser, server |
+| `loadFullCore()` | both | server only |
+| `loadCliCore()` | both, plus namespace introspection | the CLI |
+
+Each rejects with a message naming the alternative rather than failing as
+`undefined is not a function` — `loadCore()` in a Client Component points at
+`i18n-fs/navigation`, which answers the same rules without any WebAssembly.
 
 ## The CLI
 
@@ -129,7 +148,8 @@ URL is authoritative — a shared link must render the locale it names.
 | `i18n-fs/server` | Server Components | `getLocale`, `getTranslation`, `I18nProvider` |
 | `i18n-fs/client` | Client Components | `useTranslation`, `useLocale`, the context |
 | `i18n-fs/navigation` | Client Components | `Link`, `useRouter`, `usePathname`, `useLocaleSwitcher` |
-| `i18n-fs/middleware` | Edge middleware | `createI18nMiddleware` |
+| `i18n-fs/proxy` | the Edge proxy | `createI18nProxy` |
+| `i18n-fs/middleware` | the same, under the Next.js 14–15 name | `createI18nMiddleware` |
 | `i18n-fs/config` | build time | `defineConfig`, `withI18nFs` |
 
 `i18n-fs/server` reads request headers and the filesystem, so importing it from

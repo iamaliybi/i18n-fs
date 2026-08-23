@@ -100,7 +100,13 @@ describe('rich messages', () => {
 
 	it('accepts a React element as a parameter', () => {
 		// Only possible because substitution happens after tokenising, on this
-		// side of the boundary. Interpolating first would stringify the element.
+		// side of the boundary. Interpolating first would stringify the element
+		// to "[object Object]".
+		//
+		// This test used to pass the string 'Ali' while claiming to cover an
+		// element, and the public type only allowed `string | number` — so the
+		// documented behaviour was neither typed nor tested, and worked by
+		// accident.
 		const { t } = translator();
 
 		const { container } = render(
@@ -108,12 +114,13 @@ describe('rich messages', () => {
 				{t.rich(
 					'withParam',
 					{ b: (chunk) => <strong>{chunk}</strong> },
-					{ name: 'Ali' },
+					{ name: <em data-testid="element-param">Ali</em> },
 				)}
 			</p>,
 		);
 
-		expect(container.querySelector('strong')?.textContent).toBe('Ali');
+		expect(container.querySelector('em')?.textContent).toBe('Ali');
+		expect(container.querySelector('strong em')).not.toBeNull();
 	});
 
 	it('leaves an unhandled tag visible rather than dropping its content', () => {

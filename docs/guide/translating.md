@@ -241,7 +241,7 @@ A Client Component reading a namespace the server did not send **fetches it and
 suspends**. Two ways to deal with that:
 
 ```tsx
-// Pre-load it — no waiting, no boundary
+// Pre-load it — no fetch to wait for
 <I18nProvider namespaces={['common', 'home/hero']}>
 ```
 
@@ -281,8 +281,18 @@ whole page waits. So put the boundary immediately around the part that fetches:
 ```
 
 The reader never sees empty text that later fills in — they see the fallback,
-then the finished component. A namespace already in `namespaces` does not suspend
-at all, so pre-loading sidesteps the question entirely.
+then the finished component.
+
+**Pre-loading removes the fetch, not the suspension.** The first Client
+Component to translate anything also waits for the WebAssembly core to download
+and instantiate, whether or not its namespace was sent — `useTranslation` reads
+the core through `use()` before it looks at the namespace at all. That happens
+once per page, so the first client translation on a page wants a boundary even
+when every namespace is pre-loaded. Later ones do not: the core is already
+there.
+
+If no Client Component translates, the core is never fetched — see
+[what it costs](../../README.md#what-it-costs-a-visitor).
 
 **During server rendering a client fetch has no origin**, so a namespace that was
 not sent renders its fallback in the HTML and only fills in after hydration. The

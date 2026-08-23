@@ -56,6 +56,7 @@ const ERRORS = [
 /** The translator's types, wherever a translator is returned. */
 const TRANSLATOR = [
 	'NamespaceState',
+	'RichTranslationParams',
 	'TagRenderers',
 	'TranslateOptions',
 	'TranslationParams',

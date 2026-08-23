@@ -1,6 +1,6 @@
 # API reference
 
-Five entry points, split by where the code runs. Importing `i18n-fs/server` from
+Six entry points, split by where the code runs. Importing `i18n-fs/server` from
 a Client Component is a build error, which is the intent.
 
 | entry | runs where |
@@ -146,7 +146,11 @@ right.
 The same translator as `getTranslation`, synchronously. Suspends while fetching
 a namespace the server did not send — which replaces the whole subtree under the
 nearest `<Suspense>` boundary, so put one close to the component that fetches.
-Named in `<I18nProvider namespaces>`, it does not suspend at all.
+
+Naming the namespace in `<I18nProvider namespaces>` removes that fetch, but not
+every suspension: the **first** Client Component to translate anything also
+waits for the WebAssembly core, which it reads through `use()` before consulting
+the namespace. Once per page, so only the first one needs the boundary.
 
 The result of a fetch, including a failed one, is kept until the page is
 reloaded.
@@ -173,6 +177,13 @@ already loaded, in flight, or sent by the server is skipped.
 ### `useLocale(): string`
 
 The active locale.
+
+### `<I18nClientProvider>`
+
+What `<I18nProvider>` renders once it has resolved the locale on the server. It
+is exported because that hand-off crosses a `'use client'` boundary and so has to
+be a real module — an application renders `<I18nProvider>` from `i18n-fs/server`
+and never this.
 
 ### `useI18nContext()`
 
@@ -248,6 +259,13 @@ CLI, where every problem can be reported at once against the real file.
 | `debug` | `NODE_ENV !== 'production'` | emit diagnostics |
 
 Cookie defaults: `I18N_FS_LOCALE`, one year, `lax`, `/`, `secure`.
+
+### `CONFIG_DEFAULTS`
+
+The values `defineConfig` fills in when you leave a field out: `strategy: 'path'`,
+`prefix: 'as-needed'`, `messagesDir: 'locales'`, and the cookie's name, lifetime
+and flags. Read it to see what you are getting rather than to change it —
+overriding a field means passing it to `defineConfig`.
 
 ### `withI18nFs(nextConfig)`
 
