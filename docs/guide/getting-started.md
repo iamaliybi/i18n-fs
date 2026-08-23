@@ -258,3 +258,13 @@ runtime and the real WebAssembly binary are verified together.
 | [The CLI](./cli.md) | `check`, `build`, CI |
 | [Errors](./errors.md) | codes, fallbacks, diagnostics |
 | [API reference](./api.md) | every export |
+
+<!-- nav:start -->
+
+---
+
+| | | |
+| :-- | :--: | --: |
+|  | [All guides](../README.md) | [Folder structure](./folder-structure.md) → |
+
+<!-- nav:end -->

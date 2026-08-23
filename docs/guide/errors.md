@@ -164,3 +164,13 @@ missing from one locale is invisible until a reader of that locale opens the
 page.
 
 Run it in CI. See [the CLI guide](./cli.md).
+
+<!-- nav:start -->
+
+---
+
+| | | |
+| :-- | :--: | --: |
+| ← [The CLI](./cli.md) | [All guides](../README.md) | [API reference](./api.md) → |
+
+<!-- nav:end -->

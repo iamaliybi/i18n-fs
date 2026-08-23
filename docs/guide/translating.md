@@ -346,6 +346,70 @@ renders that component's fallback into the HTML while the client renders the
 message, which React reports as a hydration mismatch. That case wants
 `namespaces`.
 
+### Choosing, in one question each
+
+Work down the list and stop at the first yes.
+
+1. **Is it read during server rendering, or visible on first paint?**
+   `namespaces`. Anything else renders a fallback into the HTML and swaps it
+   after hydration, which the reader sees and React may report as a mismatch.
+2. **Will most visitors see it, a moment after the page settles?**
+   `prefetch`. The request leaves with the HTML and the payload does not grow,
+   so it costs bytes only for people who were going to need them anyway.
+3. **Do only some visitors open it, and is there an event that says so?**
+   `usePrefetch()` on `onPointerEnter` and `onFocus`. Visitors who never open
+   it never pay.
+4. **Otherwise** — leave it out. The component fetches on mount and suspends;
+   give it a `<Suspense>` boundary and be done.
+
+A worked example, all four in one layout:
+
+```tsx
+// app/[locale]/layout.tsx
+<I18nProvider
+	namespaces={['common', 'home/hero']}   // the header and the page itself
+	prefetch={['home/aside']}              // below the fold, arrives before it is scrolled to
+>
+	{children}
+</I18nProvider>
+```
+
+```tsx
+// A dialog most visitors never open.
+'use client';
+import { usePrefetch } from 'i18n-fs/client';
+
+export function SettingsButton({ onOpen }: { onOpen: () => void }) {
+	const prefetch = usePrefetch();
+	const warm = () => prefetch('settings/panel');
+
+	return (
+		<button onPointerEnter={warm} onFocus={warm} onClick={onOpen}>
+			Settings
+		</button>
+	);
+}
+```
+
+### Checking that it worked
+
+In the browser's network panel, filter for `.json`:
+
+- `namespaces` — **no request at all.** The messages are in the HTML.
+- `prefetch` — one request, started at the same time as the JavaScript rather
+  than after it, and marked as `preload`. When the component mounts it reads
+  from the cache and makes no second request.
+- `usePrefetch()` — one request the moment you hover the control, and none if
+  you do not.
+
+Two requests for the same namespace means the prefetch did not match the read:
+the usual cause is a different namespace string, since `home/aside` and
+`home/aside.json` are not the same key.
+
+The WebAssembly core is a separate matter: it is fetched once per page, by
+whichever Client Component translates first, and prefetching a namespace does
+not start it early.
+
 ## Caching, and editing messages while the server runs
 
 | | server | client |
@@ -367,3 +431,13 @@ while you are editing, so the browser would otherwise serve its cached copy.
 
 If a change still does not appear after a reload, restart the dev server — the
 console diagnostics say so too.
+
+<!-- nav:start -->
+
+---
+
+| | | |
+| :-- | :--: | --: |
+| ← [Folder structure](./folder-structure.md) | [All guides](../README.md) | [Routing](./routing.md) → |
+
+<!-- nav:end -->

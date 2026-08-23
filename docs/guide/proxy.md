@@ -146,3 +146,13 @@ every prefix mode, including `never`.
 
 **"Cannot find module './.i18n-fs/config.mjs'".** Run `i18n-fs build` before
 `next build`, or add it to your `dev` and `build` scripts.
+
+<!-- nav:start -->
+
+---
+
+| | | |
+| :-- | :--: | --: |
+| ← [Routing](./routing.md) | [All guides](../README.md) | [The CLI](./cli.md) → |
+
+<!-- nav:end -->
