@@ -80,10 +80,21 @@ for (const target of Object.values(manifest.bin)) {
 		problems.push(`${target} has no shebang — the CLI would not be executable`);
 	}
 
-	if (target.startsWith('./dist/')) {
+	if (target.replace(/^\.\//, '').startsWith('dist/')) {
 		problems.push(
 			`bin points at ${target}, which is generated — ` +
 				'a first install cannot link it, so the CLI would not be on PATH',
+		);
+	}
+
+	// npm rejects a bin path beginning with `./` and drops the entry, warning
+	// but still publishing — so the package reaches the registry with no CLI at
+	// all and nothing fails. Older npm accepted it, which is why 0.1.1 and 0.2.0
+	// shipped `./dist/cli/main.js` intact and this only surfaced on a newer one.
+	if (target.startsWith('./')) {
+		problems.push(
+			`bin points at ${target}; npm strips a leading "./" and removes the entry, ` +
+				`so the published package would have no CLI — write it as "${target.slice(2)}"`,
 		);
 	}
 }

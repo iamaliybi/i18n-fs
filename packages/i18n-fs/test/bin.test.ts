@@ -70,6 +70,14 @@ describe('the bin target', () => {
 		expect(target).not.toMatch(/^\.?\/?dist\//);
 	});
 
+	it.each(targets)('%s has no leading "./"', (target) => {
+		// npm drops a bin entry whose path starts with "./" — it warns, and then
+		// publishes anyway, so the package reaches the registry with no CLI and
+		// nothing fails. Older npm accepted it, which is how 0.1.1 and 0.2.0
+		// shipped "./dist/cli/main.js" intact and this only surfaced later.
+		expect(target.startsWith('./')).toBe(false);
+	});
+
 	it.each(targets)('%s is executable as a script', (target) => {
 		expect(readFileSync(join(pkg, target), 'utf8').startsWith('#!/usr/bin/env node')).toBe(true);
 	});
