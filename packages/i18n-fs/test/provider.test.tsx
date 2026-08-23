@@ -182,17 +182,19 @@ describe('I18nProvider', () => {
 });
 
 describe('nesting one provider inside another', () => {
-	// Documented in docs/guide/translating.md#where-to-put-the-provider. The
-	// behaviour is surprising enough to pin: the inner provider replaces the
-	// context rather than extending it, so a subtree that reads a namespace the
-	// inner one did not list falls through to the network — fetching the same
-	// file the server already inlined into the HTML.
+	// A nested provider extends the outer one rather than replacing it.
+	//
+	// It used to replace, which meant an inner provider had to re-list every
+	// namespace its parent had already inlined — and forgetting one did not
+	// fail, it fetched the file over the network instead. These pin the
+	// behaviour in both directions: what is inherited, and what an inner
+	// provider can still override.
 	function Reads({ namespace, id }: { namespace: string; id: string }) {
 		const t = useTranslation(namespace);
 		return <span data-testid={id}>{t('title')}</span>;
 	}
 
-	it('does not inherit the outer namespaces', async () => {
+	it('inherits the outer namespaces without going to the network', async () => {
 		const fetches: string[] = [];
 		vi.stubGlobal(
 			'fetch',
@@ -228,16 +230,86 @@ describe('nesting one provider inside another', () => {
 			await new Promise((resolve) => setTimeout(resolve, 50));
 		});
 
-		expect(screen.getByTestId('inner').textContent).toBe('from the network');
-		expect(fetches).toEqual(['/locales/fa/common.json']);
+		expect(screen.getByTestId('inner').textContent).toBe('sent by the outer provider');
+		expect(fetches).toEqual([]);
+
+		vi.unstubAllGlobals();
+	});
+
+	it('lets the inner provider override a namespace the outer one sent', async () => {
+		// Which is the reason to merge in this direction rather than the other:
+		// a section can ship its own copy of a shared namespace.
+		clearNamespaceCache();
+
+		await act(async () => {
+			render(
+				<I18nClientProvider
+					locale="fa"
+					config={CONFIG}
+					messages={{ common: { title: 'from the layout' } }}
+					manifest={{}}
+				>
+					<Suspense fallback={<span>…</span>}>
+						<I18nClientProvider
+							locale="fa"
+							config={CONFIG}
+							messages={{ common: { title: 'from the section' } }}
+							manifest={{}}
+						>
+							<Reads namespace="common" id="overridden" />
+						</I18nClientProvider>
+					</Suspense>
+				</I18nClientProvider>,
+			);
+		});
+
+		expect(screen.getByTestId('overridden').textContent).toBe('from the section');
+	});
+
+	it('does not inherit across a locale change', async () => {
+		// Two locales in one tree is unusual, but inheriting one locale's
+		// messages into the other's subtree would be worse than re-listing them.
+		const fetches: string[] = [];
+		vi.stubGlobal(
+			'fetch',
+			vi.fn(async (url: string) => {
+				fetches.push(String(url));
+				return new Response('{"title":"english, fetched"}', { status: 200 });
+			}),
+		);
+		clearNamespaceCache();
+
+		await act(async () => {
+			render(
+				<I18nClientProvider
+					locale="fa"
+					config={CONFIG}
+					messages={{ common: { title: 'persian' } }}
+					manifest={{}}
+				>
+					<Suspense fallback={<span>…</span>}>
+						<I18nClientProvider locale="en" config={CONFIG} messages={{}} manifest={{}}>
+							<Reads namespace="common" id="other-locale" />
+						</I18nClientProvider>
+					</Suspense>
+				</I18nClientProvider>,
+			);
+		});
+		await act(async () => {
+			await new Promise((resolve) => setTimeout(resolve, 50));
+		});
+
+		expect(screen.getByTestId('other-locale').textContent).toBe('english, fetched');
+		expect(fetches).toEqual(['/locales/en/common.json']);
 
 		vi.unstubAllGlobals();
 	});
 
 	it('costs nothing when something above already read the namespace', async () => {
-		// The saving grace, and the reason this is a size question rather than a
-		// correctness one: the namespace cache is module-scoped and keyed by
-		// locale and name, so the second reader finds it however the first got it.
+		// True before this change and still true: the namespace cache is
+		// module-scoped and keyed by locale and name, so the second reader finds
+		// it however the first got it. Inheritance is what covers the case where
+		// nothing read it first.
 		const fetches: string[] = [];
 		vi.stubGlobal(
 			'fetch',
