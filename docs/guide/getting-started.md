@@ -228,10 +228,18 @@ locale against the default one by key **and by shape**.
 
 ## A working example
 
-[`examples/next-app-router`](../../examples/next-app-router) is a complete app
-covering all of the above, plus a Client Component that fetches a namespace on
-demand. It is part of the test suite, not a sample — it is where the real proxy,
-the real Next.js runtime and the real WebAssembly binary are verified together.
+Two complete apps cover everything above, plus a Client Component that fetches
+a namespace on demand:
+
+- [`examples/next-16-proxy`](../../examples/next-16-proxy) — Next.js 16 with
+  `proxy.ts`
+- [`examples/next-15-middleware`](../../examples/next-15-middleware) — Next.js 15
+  with `middleware.ts`
+
+They are part of the test suite, not samples. Both run the same assertions from
+[`examples/shared`](../../examples/shared), so "it works on both" is proven
+rather than assumed — and they are where the real proxy, the real Next.js
+runtime and the real WebAssembly binary are verified together.
 
 ## Where to go next
 

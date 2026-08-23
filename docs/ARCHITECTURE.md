@@ -174,6 +174,11 @@ CI runs the Rust suites in both feature sets, enforces the per-target gzip
 budgets, and imports the *built* package to catch breaks in the published
 layout that a source-tree test would miss.
 
+Two example apps run end to end: `next-16-proxy` and `next-15-middleware`. The
+file convention changed between those Next.js majors, and both run the same
+assertions from `examples/shared`, so behaving identically across them is proven
+rather than assumed.
+
 ## Decisions
 
 Every non-obvious choice is written down, with what it cost and what was tried

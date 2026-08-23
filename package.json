@@ -19,8 +19,8 @@
 		"typecheck": "pnpm --filter i18n-fs typecheck",
 		"check:docs": "node scripts/check-docs.mjs",
 		"test": "pnpm --filter i18n-fs test",
-		"example": "pnpm --filter example-next-app-router build",
-		"example:test": "pnpm --filter example-next-app-router test",
+		"example": "pnpm --filter \"./examples/*\" build",
+		"example:test": "pnpm --filter \"./examples/*\" test",
 		"changeset": "changeset",
 		"version-packages": "changeset version",
 		"release": "pnpm wasm:build && pnpm wasm:sync && pnpm build && changeset publish"
