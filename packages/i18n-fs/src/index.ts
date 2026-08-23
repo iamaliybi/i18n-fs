@@ -13,7 +13,7 @@
  * then throws at runtime is worse than one that fails to resolve.
  */
 
-export { loadCore, loadFullCore, hasMessageSupport } from './core/index.js';
+export { loadCore, loadMessageCore, loadFullCore, hasMessageSupport } from './core/index.js';
 
 export { VERSION } from './version.js';
 
@@ -38,6 +38,7 @@ export type {
 	Store,
 	EdgeCore,
 	FullCore,
+	MessageCore,
 } from './core/types.js';
 
 export {

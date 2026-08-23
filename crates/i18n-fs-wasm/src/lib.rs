@@ -2,20 +2,25 @@
 //!
 //! Three binaries are produced from this one crate:
 //!
-//! | build   | wasm-pack target | features           | consumer                     |
-//! |---------|------------------|--------------------|------------------------------|
-//! | `edge`  | `bundler`        | `--no-default`     | Next.js middleware (Edge)    |
-//! | `browser` | `web`          | `full`             | client components            |
-//! | `node`  | `nodejs`         | `full`             | server components, CLI       |
+//! | build     | features           | carries                    | consumer                  |
+//! |-----------|--------------------|----------------------------|---------------------------|
+//! | `edge`    | `routing`          | routing only               | Next.js proxy (Edge)      |
+//! | `browser` | `full`             | messages only              | Client Components         |
+//! | `node`    | `full,cli,routing` | both, plus introspection   | Server Components, CLI    |
 //!
-//! The `edge` build omits message storage and formatting entirely, so the
-//! middleware bundle carries locale negotiation and route canonicalisation and
-//! nothing else.
+//! The two halves are separate features because each consumer needs exactly one
+//! of them, and only Node needs both. The browser binary is the one a visitor
+//! downloads, and it never routes: `<Link>` and `usePathname` are answered by a
+//! TypeScript mirror of the same rules so they can stay synchronous, and every
+//! redirect decision is made by the proxy before the page is served. Compiling
+//! routing into it cost 34 KB gzip that no browser ever executed.
 //!
 //! JSX never crosses this boundary. `tokenize` returns a plain node tree and the
 //! React layer builds elements from it.
 
+#[cfg(feature = "routing")]
 use i18n_fs_core::config::I18nConfig;
+#[cfg(feature = "routing")]
 use i18n_fs_core::routing::RequestInfo;
 use wasm_bindgen::prelude::*;
 
@@ -40,6 +45,9 @@ fn to_js_error(error: impl core::fmt::Display) -> JsValue {
 	JsValue::from_str(&error.to_string())
 }
 
+/// Deserialising a config snapshot is what pulls in most of the serde bridge,
+/// which is why it is gated with the routing surface that needs it.
+#[cfg(feature = "routing")]
 fn parse_config(config: JsValue) -> Result<I18nConfig, JsValue> {
 	serde_wasm_bindgen::from_value(config).map_err(to_js_error)
 }
@@ -54,6 +62,7 @@ fn to_js<T: serde::Serialize>(value: &T) -> Result<JsValue, JsValue> {
 /// Present only in the builds that need it. Validation happens at build time in
 /// the CLI, so the Edge binary does not carry it.
 #[cfg(feature = "diagnostics")]
+#[cfg(feature = "routing")]
 #[wasm_bindgen(js_name = validateConfig)]
 pub fn validate_config(config: JsValue) -> Result<JsValue, JsValue> {
 	let config = parse_config(config)?;
@@ -61,6 +70,7 @@ pub fn validate_config(config: JsValue) -> Result<JsValue, JsValue> {
 }
 
 /// Pick the best supported locale for an `Accept-Language` header.
+#[cfg(feature = "routing")]
 #[wasm_bindgen(js_name = negotiateLocale)]
 pub fn negotiate_locale(
 	config: JsValue,
@@ -72,6 +82,7 @@ pub fn negotiate_locale(
 }
 
 /// Decide what the middleware should do with a request.
+#[cfg(feature = "routing")]
 #[wasm_bindgen(js_name = decideRoute)]
 pub fn decide_route(config: JsValue, request: JsValue) -> Result<JsValue, JsValue> {
 	let config = parse_config(config)?;
@@ -85,6 +96,7 @@ pub fn decide_route(config: JsValue, request: JsValue) -> Result<JsValue, JsValu
 /// need it without constructing a full request.
 /// `host` matters only for the domain strategy, where it decides which locale
 /// goes unprefixed.
+#[cfg(feature = "routing")]
 #[wasm_bindgen(js_name = canonicalPath)]
 pub fn canonical_path(
 	config: JsValue,
@@ -101,6 +113,7 @@ pub fn canonical_path(
 
 /// The hostname that serves `locale`, or `undefined` when the domain strategy is
 /// not in use. The locale switcher needs this to build a cross-domain URL.
+#[cfg(feature = "routing")]
 #[wasm_bindgen(js_name = domainForLocale)]
 pub fn domain_for_locale(config: JsValue, locale: &str) -> Result<Option<String>, JsValue> {
 	let config = parse_config(config)?;
@@ -108,6 +121,7 @@ pub fn domain_for_locale(config: JsValue, locale: &str) -> Result<Option<String>
 }
 
 /// The internal, always locale-prefixed path Next.js should route to.
+#[cfg(feature = "routing")]
 #[wasm_bindgen(js_name = internalPath)]
 pub fn internal_path(config: JsValue, pathname: &str, locale: &str) -> Result<String, JsValue> {
 	let config = parse_config(config)?;

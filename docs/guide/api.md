@@ -50,11 +50,25 @@ The full `code → name` map, frozen.
 
 The package version. What to put in a bug report.
 
-### `loadCore()` · `loadFullCore()` · `hasMessageSupport()`
+### `loadCore()` · `loadMessageCore()` · `loadFullCore()` · `hasMessageSupport()`
 
-The WebAssembly core, for advanced use. `loadCore` returns the surface available
-in every runtime; `loadFullCore` adds message handling and rejects in the Edge
-runtime, where it was never compiled in.
+The WebAssembly core, for advanced use. There are three binaries and each
+carries only what its runtime needs, so the loader you want depends on what you
+are asking for:
+
+| loader | surface | available in |
+| --- | --- | --- |
+| `loadCore()` | routing and negotiation | proxy, server |
+| `loadMessageCore()` | messages and formatting | browser, server |
+| `loadFullCore()` | both | server only |
+
+Each rejects with a message naming the alternative when the running binary does
+not carry what was asked for — `loadCore()` in a Client Component points you at
+`i18n-fs/navigation`, whose `<Link>` and `usePathname` answer the same rules
+synchronously without any WebAssembly at all.
+
+`hasMessageSupport()` is true wherever messages can be resolved: the browser and
+the server, not the proxy.
 
 ---
 

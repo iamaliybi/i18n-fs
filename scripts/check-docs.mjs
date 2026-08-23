@@ -77,7 +77,7 @@ const EXPECTED = [
 	'createI18nProxy', 'createI18nMiddleware', 'I18nProxyHandler',
 	'LOCALE_HEADER', 'RESOLVED_HEADER', 'RECOMMENDED_MATCHER',
 	'defineConfig', 'withI18nFs',
-	'loadCore', 'loadFullCore', 'hasMessageSupport',
+	'loadCore', 'loadMessageCore', 'loadFullCore', 'hasMessageSupport', 'MessageCore',
 ];
 
 const dist = join(pkg, 'dist');

@@ -19,7 +19,7 @@
  */
 
 import { use, useMemo } from 'react';
-import { loadFullCore } from '../core/index.js';
+import { loadMessageCore } from '../core/index.js';
 import { createReporter, type Reporter } from '../report.js';
 import { createTranslator, type Translator } from '../translator.js';
 import { useI18nContext } from './context.js';
@@ -54,7 +54,7 @@ export function useTranslation(namespace: string, scope?: string): Translator {
 
 	// Reading the core through `use()` rather than awaiting it keeps the hook
 	// synchronous. The promise is stable, so this suspends at most once per page.
-	const core = use(loadFullCore());
+	const core = use(loadMessageCore());
 
 	// A namespace the server sent is turned into a store once and seeded into
 	// the same cache the fetching path uses, so both routes agree and a later

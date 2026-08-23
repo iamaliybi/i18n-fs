@@ -13,9 +13,9 @@
  */
 
 import type { ResolvedI18nFsConfig } from '../config.js';
-import { loadFullCore } from '../core/index.js';
+import { loadMessageCore } from '../core/index.js';
 import { ErrorCode } from '../errors.js';
-import type { FullCore, I18nErrorPayload } from '../core/types.js';
+import type { I18nErrorPayload, MessageCore } from '../core/types.js';
 import type { NamespaceState } from '../translator.js';
 
 const cache = new Map<string, Promise<NamespaceState>>();
@@ -57,7 +57,7 @@ function failure(
 
 /** Build a store from content the server already sent, or record why not. */
 export function stateFromPayload(
-	core: FullCore,
+	core: MessageCore,
 	locale: string,
 	namespace: string,
 	payload: unknown,
@@ -110,7 +110,7 @@ async function fetchNamespace(
 		);
 	}
 
-	const core = await loadFullCore();
+	const core = await loadMessageCore();
 	const url = namespaceUrl(config, locale, namespace, hash);
 
 	let response: Response;

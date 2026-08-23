@@ -11,7 +11,7 @@
 
 import { cache } from 'react';
 import type { ResolvedI18nFsConfig } from '../config.js';
-import { loadFullCore } from '../core/index.js';
+import { loadCore } from '../core/index.js';
 import { getI18nConfig } from './config.js';
 
 /** Header the middleware uses to hand its decision to the server layer. */
@@ -136,7 +136,7 @@ export const getLocale = cache(async (): Promise<string> => {
 /** The active locale together with how it was chosen. */
 export const getResolvedLocale = cache(async (): Promise<ResolvedLocale> => {
 	const config = await getI18nConfig();
-	const core = await loadFullCore();
+	const core = await loadCore();
 
 	return resolveLocaleFromRequest(config, await readSignals(config), (acceptLanguage) =>
 		core.negotiateLocale(config, acceptLanguage),

@@ -13,7 +13,7 @@
 import { readFile, stat } from 'node:fs/promises';
 import { join, normalize, sep } from 'node:path';
 import type { ResolvedI18nFsConfig } from '../config.js';
-import { loadFullCore } from '../core/index.js';
+import { loadMessageCore } from '../core/index.js';
 import { ErrorCode } from '../errors.js';
 import type { I18nErrorPayload } from '../core/types.js';
 import type { NamespaceState } from '../translator.js';
@@ -180,7 +180,7 @@ async function readNamespace(
 		};
 	}
 
-	const core = await loadFullCore();
+	const core = await loadMessageCore();
 
 	try {
 		return { status: 'ready', store: new core.Store(locale, namespace, raw) };

@@ -13,10 +13,11 @@
 
 import { CAPABILITY, loadBindings } from '#core-bindings';
 import { VERSION } from '../version.js';
-import type { CliCore, EdgeCore, FullCore } from './types.js';
+import type { CliCore, EdgeCore, FullCore, MessageCore } from './types.js';
 
-let pending: Promise<EdgeCore> | undefined;
-let pendingFull: Promise<FullCore> | undefined;
+let pending: Promise<MessageCore | EdgeCore> | undefined;
+let pendingRouting: Promise<EdgeCore> | undefined;
+let pendingMessages: Promise<MessageCore> | undefined;
 
 /**
  * The core available in this runtime.
@@ -25,6 +26,26 @@ let pendingFull: Promise<FullCore> | undefined;
  * exist everywhere. Use {@link loadFullCore} where message handling is needed.
  */
 export function loadCore(): Promise<EdgeCore> {
+	pendingRouting ??= (async () => {
+		const core = await loadAny();
+
+		if (CAPABILITY === 'messages') {
+			throw new Error(
+				'[i18n-fs] The browser build of the core does not include routing. ' +
+					'It is the binary a visitor downloads, so it carries message resolution ' +
+					'only — use <Link>, useRouter and usePathname from "i18n-fs/navigation", ' +
+					'which answer the same rules synchronously.',
+			);
+		}
+
+		return core as EdgeCore;
+	})();
+
+	return pendingRouting;
+}
+
+/** Load whichever binary this runtime has, before any capability check. */
+function loadAny(): Promise<MessageCore | EdgeCore> {
 	pending ??= loadBindings().then(assertVersionsAgree);
 	return pending;
 }
@@ -41,7 +62,7 @@ export function loadCore(): Promise<EdgeCore> {
  * This cannot happen in a published package: both halves are built together.
  * It happens in development, when one side is rebuilt and the other is not.
  */
-function assertVersionsAgree(core: EdgeCore): EdgeCore {
+function assertVersionsAgree<T extends { coreVersion(): string }>(core: T): T {
 	const compiled = core.coreVersion();
 
 	if (compiled !== VERSION) {
@@ -62,25 +83,45 @@ function assertVersionsAgree(core: EdgeCore): EdgeCore {
  * Loading messages inside middleware is a design mistake rather than a missing
  * feature, so it fails loudly with the reason.
  */
-export function loadFullCore(): Promise<FullCore> {
+export function loadMessageCore(): Promise<MessageCore> {
 	// The same promise every time, not merely the same underlying work. React's
 	// `use()` identifies a suspended read by promise identity, and an `async`
 	// function returns a fresh promise per call — which would suspend forever.
-	pendingFull ??= (async () => {
-		const core = await loadCore();
+	pendingMessages ??= (async () => {
+		const core = await loadAny();
 
-		if (CAPABILITY !== 'full') {
+		if (CAPABILITY === 'edge') {
 			throw new Error(
 				'[i18n-fs] The Edge build of the core does not include message handling. ' +
-					'Middleware resolves the locale; loading and formatting messages belongs ' +
+					'The proxy resolves the locale; loading and formatting messages belongs ' +
 					'in a Server Component or a Client Component.',
 			);
 		}
 
-		return core as FullCore;
+		return core as MessageCore;
 	})();
 
-	return pendingFull;
+	return pendingMessages;
+}
+
+/**
+ * The core with both halves. Node only.
+ *
+ * The browser binary carries messages without routing, so this is not the thing
+ * to reach for in a Client Component — {@link loadMessageCore} is.
+ */
+export async function loadFullCore(): Promise<FullCore> {
+	const core = await loadMessageCore();
+
+	if (CAPABILITY !== 'full') {
+		throw new Error(
+			'[i18n-fs] Routing and message handling are compiled into the same binary ' +
+				'only under Node. In the browser use loadMessageCore(); in the proxy use ' +
+				'loadCore().',
+		);
+	}
+
+	return core as FullCore;
 }
 
 /**
@@ -104,7 +145,7 @@ export async function loadCliCore(): Promise<CliCore> {
 
 /** Whether this runtime's core can load and format messages. */
 export function hasMessageSupport(): boolean {
-	return CAPABILITY === 'full';
+	return CAPABILITY !== 'edge';
 }
 
 export type * from './types.js';
