@@ -9,6 +9,7 @@
 
 import { describe, expect, it } from 'vitest';
 import { loadFullCore } from '../src/core/index.js';
+import { ErrorCode } from '../src/errors.js';
 import type { I18nErrorPayload, ResolvedI18nFsConfig } from '../src/index.js';
 import { CONFIG_DEFAULTS } from '../src/config.js';
 
@@ -40,7 +41,7 @@ describe('configuration', () => {
 		const issues = core.validateConfig({ ...config, defaultLocale: 'de' });
 		expect(issues).toHaveLength(1);
 		expect(issues[0]).toMatchObject({
-			code: 'INVALID_CONFIG',
+			code: ErrorCode.InvalidConfig,
 			field: 'defaultLocale',
 		});
 	});
@@ -125,7 +126,7 @@ describe('message store', () => {
 			store.resolveText('hero', 'missing');
 		} catch (error) {
 			const payload = error as I18nErrorPayload;
-			expect(payload.code).toBe('KEY_NOT_FOUND');
+			expect(payload.code).toBe(ErrorCode.KeyNotFound);
 			expect(payload.locale).toBe('fa');
 			expect(payload.namespace).toBe('home');
 			expect(payload.key).toBe('missing');
@@ -138,10 +139,10 @@ describe('message store', () => {
 		const store = new core.Store('fa', 'home', raw);
 		try {
 			expect(() => store.resolveText('nope', 'title')).toThrowError(
-				expect.objectContaining({ code: 'SCOPE_NOT_FOUND' }),
+				expect.objectContaining({ code: ErrorCode.ScopeNotFound }),
 			);
 			expect(() => store.resolveText('hero', 'cta')).toThrowError(
-				expect.objectContaining({ code: 'TYPE_MISMATCH' }),
+				expect.objectContaining({ code: ErrorCode.TypeMismatch }),
 			);
 		} finally {
 			store.free();
@@ -150,7 +151,7 @@ describe('message store', () => {
 
 	it('distinguishes invalid JSON from a missing key', () => {
 		expect(() => new core.Store('fa', 'broken', '{ oops')).toThrowError(
-			expect.objectContaining({ code: 'INVALID_JSON' }),
+			expect.objectContaining({ code: ErrorCode.InvalidJson }),
 		);
 	});
 });

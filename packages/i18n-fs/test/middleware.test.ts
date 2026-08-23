@@ -16,6 +16,7 @@ import { describe, expect, it } from 'vitest';
 import type { ResolvedI18nFsConfig } from '../src/config.js';
 import {
 	createI18nMiddleware,
+	createI18nProxy,
 	LOCALE_HEADER,
 	RECOMMENDED_MATCHER,
 	RESOLVED_HEADER,
@@ -32,7 +33,7 @@ const CONFIG: ResolvedI18nFsConfig = {
 	debug: false,
 };
 
-const middleware = createI18nMiddleware(CONFIG);
+const middleware = createI18nProxy(CONFIG);
 
 function request(path: string, headers: Record<string, string> = {}): NextRequest {
 	return new NextRequest(new URL(path, 'https://example.com'), { headers });
@@ -152,7 +153,7 @@ describe('paths the middleware must not touch', () => {
 
 describe('composition', () => {
 	it('lets a caller short-circuit before the locale is resolved', async () => {
-		const guarded = createI18nMiddleware(CONFIG, {
+		const guarded = createI18nProxy(CONFIG, {
 			before: (incoming) =>
 				incoming.nextUrl.pathname.startsWith('/admin')
 					? NextResponse.redirect(new URL('/login', incoming.url))
@@ -164,5 +165,14 @@ describe('composition', () => {
 
 		const normal = await guarded(request('/about'));
 		expect(target(normal)).toBe('/fa/about');
+	});
+});
+
+describe('the middleware name', () => {
+	it('is still exported, because Next.js 14 and 15 use that file convention', () => {
+		// Next.js 16 renamed the convention to `proxy` and deprecated
+		// `middleware`. Upgrading Next should not force an application to rename
+		// its import at the same moment it renames its file.
+		expect(createI18nMiddleware).toBe(createI18nProxy);
 	});
 });

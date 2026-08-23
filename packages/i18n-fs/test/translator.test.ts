@@ -9,6 +9,7 @@
 import { describe, expect, it, vi } from 'vitest';
 import { loadFullCore } from '../src/core/index.js';
 import { createReporter, formatError } from '../src/report.js';
+import { ErrorCode } from '../src/errors.js';
 import { createTranslator, type NamespaceState } from '../src/translator.js';
 
 const core = await loadFullCore();
@@ -28,7 +29,7 @@ function ready(raw = MESSAGES): NamespaceState {
 const failed: NamespaceState = {
 	status: 'failed',
 	error: {
-		code: 'NAMESPACE_NOT_FOUND',
+		code: ErrorCode.NamespaceNotFound,
 		locale: 'fa',
 		namespace: 'home',
 		scope: null,
@@ -88,7 +89,7 @@ describe('fallback', () => {
 		const badJson = translator({
 			status: 'failed',
 			error: {
-				code: 'INVALID_JSON',
+				code: ErrorCode.InvalidJson,
 				locale: 'fa',
 				namespace: 'home',
 				scope: null,
@@ -184,14 +185,18 @@ describe('diagnostics', () => {
 	it('names the locale and namespace so the file can be found', () => {
 		expect(
 			formatError({
-				code: 'KEY_NOT_FOUND',
+				code: ErrorCode.KeyNotFound,
 				locale: 'fa',
 				namespace: 'home/hero',
 				scope: 'cta',
 				key: 'label',
 				detail: null,
 			}),
-		).toBe('[i18n-fs] KEY_NOT_FOUND: key "cta.label" does not exist in "home/hero" for locale "fa".');
+			// The name is what a person reads; the number is what code compares.
+			// Printing only the number would make the console useless.
+		).toBe(
+			'[i18n-fs] KEY_NOT_FOUND (201): key "cta.label" does not exist in "home/hero" for locale "fa".',
+		);
 	});
 });
 

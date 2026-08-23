@@ -1,17 +1,25 @@
 /**
- * The locale-resolving middleware.
+ * The locale-resolving proxy.
+ *
+ * Next.js 16 renamed this file convention from `middleware` to `proxy`, and
+ * deprecated the old name. Both still work; the factory is the same function
+ * either way, because what changed is which filename Next looks for, not the
+ * signature it expects.
  *
  * ```ts
- * // middleware.ts
- * import { createI18nMiddleware } from 'i18n-fs/middleware';
+ * // proxy.ts  (Next.js 16+)
+ * import { createI18nProxy } from 'i18n-fs/proxy';
  * import i18nConfig from './.i18n-fs/config.mjs';
  *
- * export default createI18nMiddleware(i18nConfig);
+ * export default createI18nProxy(i18nConfig);
  *
  * export const config = {
  *   matcher: ['/((?!_next/|api/|.*\.[^/]*$).*)'],
  * };
  * ```
+ *
+ * On Next.js 14 and 15 the file is `middleware.ts` and the factory is
+ * `createI18nMiddleware`, which is the same function under its older name.
  *
  * The matcher has to be written out literally. Next.js reads it by static
  * analysis at build time and rejects an imported identifier, so this package
@@ -53,8 +61,8 @@ export const RESOLVED_HEADER = 'x-i18n-fs-resolved';
  */
 export const RECOMMENDED_MATCHER = '/((?!_next/|api/|.*\\.[^/]*$).*)';
 
-/** Options for {@link createI18nMiddleware}. */
-export interface I18nMiddlewareOptions {
+/** Options for {@link createI18nProxy}. */
+export interface I18nProxyOptions {
 	/**
 	 * Run before the locale is resolved. Return a response to short-circuit.
 	 *
@@ -91,12 +99,29 @@ function forwardedHeaders(request: NextRequest, locale: string): Headers {
 	return headers;
 }
 
-/** Build the middleware for a configuration. */
-export function createI18nMiddleware(
+/**
+ * What {@link createI18nProxy} returns.
+ *
+ * Named rather than inferred on purpose. An inferred return type makes the
+ * application's `export default` reference `NextResponse` through *this
+ * package's* copy of the Next.js types, and TypeScript then refuses it with
+ * "The inferred type of 'default' cannot be named without a reference to
+ * .../node_modules/next/server. This is likely not portable." Naming the type
+ * here gives the declaration something local to point at.
+ */
+export type I18nProxyHandler = (request: NextRequest) => Promise<NextResponse>;
+
+/**
+ * Build the proxy handler for a configuration.
+ *
+ * Export the result as the default export of `proxy.ts` (Next.js 16+) or
+ * `middleware.ts` (Next.js 14 and 15).
+ */
+export function createI18nProxy(
 	config: ResolvedI18nFsConfig,
-	options: I18nMiddlewareOptions = {},
-) {
-	return async function i18nMiddleware(request: NextRequest): Promise<NextResponse> {
+	options: I18nProxyOptions = {},
+): I18nProxyHandler {
+	return async function i18nProxy(request: NextRequest): Promise<NextResponse> {
 		const early = await options.before?.(request);
 		if (early) return early;
 
@@ -142,3 +167,20 @@ export function createI18nMiddleware(
 		return applyCookie(response, config, decision);
 	};
 }
+
+/**
+ * The former name of {@link createI18nProxy}.
+ *
+ * @deprecated Next.js 16 renamed the file convention to `proxy`; rename the
+ * import along with the file. This alias is the identical function and is kept
+ * so upgrading Next.js does not force an application to change two things at
+ * once.
+ */
+export const createI18nMiddleware = createI18nProxy;
+
+/**
+ * The former name of {@link I18nProxyOptions}.
+ *
+ * @deprecated Renamed alongside `createI18nMiddleware`.
+ */
+export type I18nMiddlewareOptions = I18nProxyOptions;

@@ -16,30 +16,79 @@ pub type I18nResult<T> = Result<T, Box<I18nError>>;
 
 /// Machine-readable reason a lookup failed.
 ///
-/// These strings are part of the public contract: the JavaScript layer switches
-/// on them and they appear in developer-facing diagnostics.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, serde::Serialize, serde::Deserialize)]
-#[serde(rename_all = "SCREAMING_SNAKE_CASE")]
+/// Crosses the boundary as a **number**, so callers can compare against the
+/// `ErrorCode` constants the package exports rather than against a string they
+/// have to spell correctly.
+///
+/// The numbers are grouped, which makes a whole class of problem testable with
+/// one comparison:
+///
+/// | range | meaning                                          |
+/// |-------|--------------------------------------------------|
+/// | `1xx` | the namespace could not be used at all            |
+/// | `2xx` | the namespace is fine; the lookup inside it is not |
+/// | `3xx` | the message resolved; formatting it went wrong     |
+/// | `4xx` | the configuration is wrong                         |
+///
+/// The values are a public contract. Add new ones; never renumber an existing
+/// one.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+#[repr(u16)]
 pub enum ErrorCode {
 	/// The namespace file could not be loaded (missing file, 404, unreadable).
-	NamespaceNotFound,
+	NamespaceNotFound = 100,
 	/// The namespace file was loaded but is not valid JSON.
-	InvalidJson,
+	InvalidJson = 101,
 	/// The namespace loaded and parsed, but the requested scope object is absent.
-	ScopeNotFound,
+	ScopeNotFound = 200,
 	/// Scope resolved, but the key does not exist inside it.
-	KeyNotFound,
+	KeyNotFound = 201,
 	/// The key exists but holds the wrong shape (e.g. an object where a string
 	/// was requested, or a string where `t.array` expected a list).
-	TypeMismatch,
+	TypeMismatch = 202,
 	/// A `{placeholder}` in the message had no matching entry in `params`.
-	ParamMissing,
+	ParamMissing = 300,
 	/// The `i18n-fs.config.ts` snapshot is not internally consistent.
-	InvalidConfig,
+	InvalidConfig = 400,
 }
 
 impl ErrorCode {
+	/// Every code, in numeric order. Used by the JavaScript layer's tests to
+	/// prove the two halves list exactly the same set.
+	pub const ALL: [Self; 7] = [
+		Self::NamespaceNotFound,
+		Self::InvalidJson,
+		Self::ScopeNotFound,
+		Self::KeyNotFound,
+		Self::TypeMismatch,
+		Self::ParamMissing,
+		Self::InvalidConfig,
+	];
+
+	/// The numeric value that crosses the boundary.
+	pub const fn as_u16(self) -> u16 {
+		self as u16
+	}
+
+	/// The code for a number, or `None` if it is not one of ours.
+	pub const fn from_u16(value: u16) -> Option<Self> {
+		match value {
+			100 => Some(Self::NamespaceNotFound),
+			101 => Some(Self::InvalidJson),
+			200 => Some(Self::ScopeNotFound),
+			201 => Some(Self::KeyNotFound),
+			202 => Some(Self::TypeMismatch),
+			300 => Some(Self::ParamMissing),
+			400 => Some(Self::InvalidConfig),
+			_ => None,
+		}
+	}
+
 	/// Stable `SCREAMING_SNAKE_CASE` identifier for this code.
+	///
+	/// Not what crosses the boundary — that is the number — but what appears in
+	/// diagnostics, because `KEY_NOT_FOUND` in a console tells you more at a
+	/// glance than `201` does.
 	pub const fn as_str(self) -> &'static str {
 		match self {
 			Self::NamespaceNotFound => "NAMESPACE_NOT_FOUND",
@@ -64,7 +113,34 @@ impl ErrorCode {
 
 impl fmt::Display for ErrorCode {
 	fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-		f.write_str(self.as_str())
+		// Name and number together: the name is what a human reads, the number
+		// is what they will find in the documentation table.
+		write!(f, "{} ({})", self.as_str(), self.as_u16())
+	}
+}
+
+impl From<ErrorCode> for u16 {
+	fn from(code: ErrorCode) -> Self {
+		code.as_u16()
+	}
+}
+
+// Hand-written rather than derived, so the wire form is a bare number instead of
+// a string or a tagged object. Deriving would need `serde_repr`, and the Edge
+// binary pays for every dependency it links.
+impl serde::Serialize for ErrorCode {
+	fn serialize<S: serde::Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
+		serializer.serialize_u16(self.as_u16())
+	}
+}
+
+impl<'de> serde::Deserialize<'de> for ErrorCode {
+	fn deserialize<D: serde::Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
+		let value = u16::deserialize(deserializer)?;
+
+		Self::from_u16(value).ok_or_else(|| {
+			serde::de::Error::custom(format!("{value} is not a known i18n-fs error code"))
+		})
 	}
 }
 
@@ -157,7 +233,7 @@ impl I18nError {
 #[cfg(feature = "diagnostics")]
 impl fmt::Display for I18nError {
 	fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-		write!(f, "[i18n-fs] {}: ", self.code.as_str())?;
+		write!(f, "[i18n-fs] {}: ", self.code)?;
 
 		match self.code {
 			ErrorCode::NamespaceNotFound => write!(
