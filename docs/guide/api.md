@@ -116,11 +116,9 @@ renders its fallback during server rendering and fills in after hydration.
 page settles. Anything already in `namespaces` is skipped rather than preloaded
 twice.
 
-**Nesting replaces, it does not extend.** A provider inside another does not
-inherit its namespaces, so an inner one must list everything its subtree reads —
-including anything the outer one already sends. Omitting it still renders, which
-is why it is worth saying: the namespace is fetched over the network instead,
-the same file the server already inlined. See
+**Nesting extends.** A provider inside another inherits its namespaces, so an
+inner one lists only what its section adds. Naming the same namespace in both is
+allowed and the inner one wins. Inheritance stops at a change of locale. See
 [where to put the provider](./translating.md#where-to-put-the-provider).
 
 ### `redirect(href, locale?)` · `permanentRedirect(href, locale?)`

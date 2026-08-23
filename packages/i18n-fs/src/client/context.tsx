@@ -55,12 +55,36 @@ export function I18nClientProvider({
 	manifest,
 	children,
 }: I18nClientProviderProps) {
-	// The value is rebuilt only when the locale actually changes, so switching
-	// language re-renders consumers and navigation within a locale does not.
-	const value = useMemo<I18nContextValue>(
-		() => ({ locale, config, messages, manifest }),
-		[locale, config, messages, manifest],
-	);
+	// What a provider higher up already sent, if there is one.
+	//
+	// A nested provider used to replace this outright, which meant a subtree had
+	// to re-list every namespace its parent had already inlined into the HTML —
+	// and forgetting one did not fail. It fetched the file over the network
+	// instead, the same bytes the document already carried, and during server
+	// rendering that fetch has no origin so the component rendered its fallback.
+	//
+	// Extending is what a reader expects from nesting, and it is what makes
+	// putting a provider on one route a size optimisation rather than a trap.
+	const outer = useOptionalI18nContext();
+
+	// The value is rebuilt only when something in it actually changes, so
+	// switching language re-renders consumers and navigating within a locale
+	// does not.
+	const value = useMemo<I18nContextValue>(() => {
+		// Only from a provider for the same locale. Two locales in one tree is
+		// unusual, but inheriting Persian messages into an English subtree would
+		// be worse than making it re-list them.
+		const inherits = outer !== null && outer.locale === locale;
+
+		return {
+			locale,
+			config,
+			// The inner provider wins on any namespace both send, which is what
+			// makes overriding one for a section possible.
+			messages: inherits ? { ...outer.messages, ...messages } : messages,
+			manifest: inherits ? { ...outer.manifest, ...manifest } : manifest,
+		};
+	}, [locale, config, messages, manifest, outer]);
 
 	return <I18nContext.Provider value={value}>{children}</I18nContext.Provider>;
 }

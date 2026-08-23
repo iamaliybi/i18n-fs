@@ -427,29 +427,29 @@ It can also go lower — in a route group's layout, or in a single page — when
 section needs messages the rest of the app does not. A dashboard that ships six
 namespaces to nobody but the dashboard is a real saving.
 
-**A nested provider does not inherit the outer one's namespaces.** It replaces
-the context rather than extending it, so an inner provider must list everything
-its subtree reads:
+**A nested provider extends the outer one.** List only what the section adds:
 
 ```tsx
 // app/[locale]/layout.tsx
 <I18nProvider namespaces={['common']}>{children}</I18nProvider>
 
-// app/[locale]/dashboard/layout.tsx — 'common' is listed again on purpose
-<I18nProvider namespaces={['common', 'dashboard/nav', 'dashboard/charts']}>
+// app/[locale]/dashboard/layout.tsx — 'common' is already there
+<I18nProvider namespaces={['dashboard/nav', 'dashboard/charts']}>
 	{children}
 </I18nProvider>
 ```
 
-Leave `common` out of the inner list and it still works, which is what makes
-this worth stating: a component that reads it will find it in the client cache
-if something above already read it, and **fetch it over the network** if nothing
-has — the same file the server already inlined into the HTML, downloaded again.
-During server rendering that fetch has no origin, so the component renders its
-fallback into the HTML and fills in after hydration.
+Naming the same namespace in both is allowed and the inner one wins, which is
+how a section ships its own copy of a shared namespace.
 
-So: one provider at the root is the default, more than one is a size
-optimisation, and each one lists what its own subtree reads.
+Inheritance stops at a change of locale. Two locales in one tree is unusual, but
+handing one locale's messages to the other's subtree would be worse than making
+it list them again — so a provider whose locale differs from the one above it
+starts from nothing.
+
+So: one provider at the root is the default, and more than one is a size
+optimisation — a dashboard that ships six namespaces to nobody but the
+dashboard.
 
 ## Caching, and editing messages while the server runs
 

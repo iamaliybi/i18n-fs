@@ -124,6 +124,30 @@ but translates only on the server emits **no `.wasm` at all**.
 `test/tree-shaking.test.ts` bundles each import and fails if one of them starts
 pulling the core, because the only symptom otherwise is a larger download.
 
+### And what the messages cost
+
+Three things decide how a namespace reaches a Client Component, and they trade
+document size against a round trip. Measured on a page reading three namespaces
+of 13.5 KB each — 41 KB of JSON — served by `next start`:
+
+| | HTML, uncompressed | **over the wire (gzip)** | when the browser has it |
+| --- | --- | --- | --- |
+| `<I18nProvider namespaces>` | 47.1 KB | **13.0 KB** | before any JavaScript runs |
+| `<I18nProvider prefetch>` | 6.5 KB | **2.2 KB** | in parallel with the JavaScript |
+| neither | 5.6 KB | **2.0 KB** | after hydration, on demand |
+
+41 KB of JSON costs about **11 KB on the wire**, because HTML compresses. That
+is the number worth reasoning about — the uncompressed figure is what a
+devtools DOM panel shows and not what anyone downloads.
+
+Minifying the JSON is not worth doing: stripping the indentation makes the files
+3% smaller and, after gzip, **0.1 KB** different, since compression already
+collapses repeated whitespace.
+
+The two levers that do move it are choosing `prefetch` over `namespaces`, and
+putting a provider on the route that needs the messages rather than at the root.
+Both are in [translating](docs/guide/translating.md#prefetching-so-nothing-waits).
+
 ## Quick look
 
 ```ts
