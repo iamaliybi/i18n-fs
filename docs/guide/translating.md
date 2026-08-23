@@ -289,6 +289,53 @@ not sent renders its fallback in the HTML and only fills in after hydration. The
 console says so, and names the fix. Anything a Client Component reads on first
 paint belongs in `namespaces`.
 
+### Prefetching, so nothing waits
+
+Between "send it with the page" and "fetch it when it is needed" there is a
+third option: start the request early and let it arrive before anything asks.
+
+```tsx
+// The request goes out with the HTML, in parallel with the JavaScript.
+<I18nProvider namespaces={['common']} prefetch={['settings/panel']}>
+```
+
+That emits a `<link rel="preload">`. Unlike `namespaces` it does **not** put the
+JSON in the payload, so the HTML does not grow — and unlike leaving it out
+entirely, the browser is not still waiting when the component mounts.
+
+```tsx
+// Or start it on intent, and pay nothing for visitors who never ask.
+import { usePrefetch } from 'i18n-fs/client';
+
+const prefetch = usePrefetch();
+const warm = () => prefetch('settings/panel');
+
+<button onPointerEnter={warm} onFocus={warm} onClick={open}>Settings</button>
+```
+
+`onFocus` as well as `onPointerEnter`: a keyboard user never hovers and a touch
+user has no hover at all, so prefetching only on hover gives the fastest
+experience to the people who need it least.
+
+| | payload | request starts | good for |
+| --- | --- | --- | --- |
+| `namespaces` | grows | never — it is already there | anything on first paint |
+| `prefetch` | unchanged | with the HTML | a client-only subtree, a panel that opens shortly |
+| `usePrefetch()` | unchanged | on hover, focus, or any intent | anything most visitors never open |
+| neither | unchanged | when the component renders | rarely-used namespaces |
+
+**Prefetching is a guess, and a guess that fails is forgotten.** A read that
+fails is remembered, so one 404 does not become a request per render — but if a
+prefetch cached its failure, a moment of bad network while guessing would decide
+that the namespace is missing for the rest of the page's life, and the component
+that actually needs it would render fallbacks having never tried. So a failed
+prefetch leaves no trace and the real read starts clean.
+
+Prefetching something read during **server** rendering does not help: the server
+renders that component's fallback into the HTML while the client renders the
+message, which React reports as a hydration mismatch. That case wants
+`namespaces`.
+
 ## Caching, and editing messages while the server runs
 
 | | server | client |

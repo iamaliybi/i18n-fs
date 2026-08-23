@@ -35,9 +35,12 @@ export {
 	hasNamespace,
 	loadClientNamespace,
 	namespaceUrl,
+	prefetchNamespace,
 	seedNamespace,
 	stateFromPayload,
 } from './namespaces.js';
+
+export { usePrefetch } from './prefetch.js';
 
 export type {
 	NamespaceState,

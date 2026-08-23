@@ -237,6 +237,41 @@ export function describeRouting({ root, port, label }) {
 		});
 	});
 
+	describe(`${label}: prefetched namespaces are preloaded`, () => {
+		it('emits a preload link with the content hash', async () => {
+			const { body } = await follow('/en');
+
+			const link = /<link[^>]*rel="preload"[^>]*as="fetch"[^>]*>/.exec(body)?.[0];
+			assert.ok(link, 'no <link rel="preload" as="fetch"> in the HTML');
+			assert.match(link, /home\/aside\.json\?v=[a-f0-9]+/, 'preload should carry the hash');
+
+			// Without crossorigin the preload has different credentials than the
+			// fetch the client makes, so the browser downloads the file twice and
+			// reports the preload as unused. Chrome says so outright.
+			assert.match(link, /crossorigin="anonymous"/);
+		});
+
+		it('does not preload a namespace it already sent', async () => {
+			// `common` and `home/hero` are in the payload; preloading them would
+			// fetch files the browser never asks for.
+			const { body } = await follow('/en');
+
+			for (const namespace of ['common', 'home/hero']) {
+				assert.ok(
+					!body.includes(`rel="preload" as="fetch" crossorigin="anonymous" href="/locales/en/${namespace}.json`),
+					`${namespace} is in the payload and should not also be preloaded`,
+				);
+			}
+		});
+
+		it('serves the prefetched namespace', async () => {
+			const { status, body } = await follow('/locales/en/home/aside.json');
+
+			assert.equal(status, 200);
+			assert.match(JSON.parse(body).note, /preload/);
+		});
+	});
+
 	describe(`${label}: a missing key does not break the page`, () => {
 		it('renders the developer fallback', async () => {
 			const { body } = await follow('/en');

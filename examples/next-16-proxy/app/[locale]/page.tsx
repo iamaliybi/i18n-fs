@@ -3,6 +3,8 @@ import { getTranslation } from 'i18n-fs/server';
 import { Link } from 'i18n-fs/navigation';
 import { LocaleSwitcher } from '../locale-switcher';
 import { LateNamespace } from '../late-namespace';
+import { SettingsPanel } from '../settings-panel';
+import { Aside } from '../aside';
 
 export default async function HomePage() {
 	const t = await getTranslation('home/hero', 'hero');
@@ -33,6 +35,8 @@ export default async function HomePage() {
 			{/* Not pre-loaded by the provider, so the client fetches and suspends. */}
 			<Suspense fallback={<span data-testid="late-loading">loading</span>}>
 				<LateNamespace />
+			<SettingsPanel />
+			<Aside />
 			</Suspense>
 		</main>
 	);

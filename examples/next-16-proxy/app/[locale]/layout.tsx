@@ -23,7 +23,7 @@ export default async function LocaleLayout({
 					missing renders its fallback on the server and only fills in after
 					hydration.
 				*/}
-				<I18nProvider namespaces={['common', 'home/hero']}>{children}</I18nProvider>
+				<I18nProvider namespaces={['common', 'home/hero']} prefetch={['home/aside']}>{children}</I18nProvider>
 			</body>
 		</html>
 	);
