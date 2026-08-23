@@ -23,7 +23,7 @@
 		"example": "npm run build --workspace=example-next-16-proxy --workspace=example-next-15-middleware",
 		"example:test": "npm run test --workspace=example-next-16-proxy --workspace=example-next-15-middleware",
 		"changeset": "changeset",
-		"changeset:version": "changeset version",
+		"changeset:version": "changeset version && npm install --package-lock-only",
 		"changeset:publish": "changeset publish",
 		"release": "npm run wasm:build && npm run wasm:sync && npm run build && npm run measure:check && changeset publish"
 	},
