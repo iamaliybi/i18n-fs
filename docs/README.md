@@ -31,3 +31,4 @@ first:
 | [0007](adr/0007-server-layer.md) | the server layer and the server/client boundary |
 | [0008](adr/0008-client-layer.md) | suspension, and why the promise cache is module-scoped |
 | [0009](adr/0009-middleware-and-navigation.md) | the proxy, navigation, and where the WASM actually loads |
+| [0010](adr/0010-package-manager.md) | npm workspaces, not pnpm |

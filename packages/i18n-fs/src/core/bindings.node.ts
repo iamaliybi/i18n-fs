@@ -8,7 +8,7 @@
  * at request time as an ENOENT long after the build reported success.
  *
  * Embedding the bytes removes the question entirely. It works the same under
- * webpack, Turbopack, a plain `node` process and a pnpm workspace symlink, and
+ * webpack, Turbopack, a plain `node` process and a workspace symlink, and
  * needs no configuration from the application.
  */
 

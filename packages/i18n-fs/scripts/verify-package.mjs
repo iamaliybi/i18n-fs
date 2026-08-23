@@ -122,7 +122,7 @@ if (!problems.length) {
 if (problems.length) {
 	console.error('Refusing to publish:\n');
 	for (const problem of problems) console.error(`  - ${problem}`);
-	console.error('\nRun `pnpm bootstrap` from the repository root and try again.');
+	console.error('\nRun `npm run bootstrap` from the repository root and try again.');
 	process.exit(1);
 }
 

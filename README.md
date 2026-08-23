@@ -112,12 +112,12 @@ failure first. The two go together. See [errors](docs/guide/errors.md).
 Requires Rust (stable, with `wasm32-unknown-unknown`), `wasm-pack`, Node 22.18+.
 
 ```bash
-pnpm bootstrap
+npm run bootstrap
 ```
 
-Installs, builds the three WebAssembly targets, syncs them into the package,
-builds the package, and installs once more — the last step is what lets pnpm
-link the CLI, which it cannot do before `dist/cli/main.js` exists.
+Installs, builds the three WebAssembly targets, syncs them into the package and
+builds it. Plain npm workspaces — nothing to install or learn beyond the Node
+version in `.nvmrc`.
 
 Both Rust feature sets matter. The proxy compiles the core with
 `--no-default-features`, so a change that only builds with `full` breaks it:
@@ -131,7 +131,7 @@ cargo test -p i18n-fs-core --no-default-features
 ```
 
 ```bash
-pnpm typecheck && pnpm build && pnpm test
+npm run typecheck && npm run build && npm test
 ```
 
 The example apps are part of the test suite, not samples — they are the only
@@ -141,7 +141,7 @@ and both run the same assertions, so behaving identically across them is proven
 rather than assumed:
 
 ```bash
-pnpm example && pnpm example:test
+npm run example && npm run example:test
 ```
 
 | | | |
@@ -153,7 +153,7 @@ pnpm example && pnpm example:test
 
 Work happens on branches and lands through pull requests; `main` is never pushed
 to directly. Every pull request that changes published behaviour needs a
-changeset (`pnpm changeset`).
+changeset (`npm run changeset`).
 
 Architecture decisions live in [`docs/adr/`](docs/adr/). If you are changing how
 something fundamental works, the ADR is part of the change.

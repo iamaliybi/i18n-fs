@@ -11,8 +11,8 @@
 - [ ] `cargo fmt --all -- --check` passes
 - [ ] `cargo clippy` passes with no warnings, in **both** the full and minimal feature sets
 - [ ] `cargo test` passes in both feature sets
-- [ ] `pnpm typecheck && pnpm build && pnpm -r test` pass
-- [ ] The Edge WASM build is still within its gzip budget (`pnpm wasm:build`)
+- [ ] `npm run typecheck && npm run build && npm test` pass
+- [ ] The Edge WASM build is still within its gzip budget (`npm run wasm:build`)
 - [ ] A changeset is included, or this PR changes no published behaviour
 - [ ] Any architectural decision is recorded in `docs/adr/`
 

@@ -42,23 +42,21 @@ jobs:
         with:
           version: v0.13.1
 
-      - uses: pnpm/action-setup@v4
-
       - uses: actions/setup-node@v4
         with:
           node-version-file: .nvmrc
-          cache: pnpm
+          cache: npm
           registry-url: https://registry.npmjs.org
 
-      - run: pnpm install --frozen-lockfile
+      - run: npm ci
 
       # The published package contains compiled WebAssembly, so the release job
       # has to build it rather than trusting an artefact from another workflow.
       - name: Build everything
         run: |
-          pnpm wasm:build
-          pnpm wasm:sync
-          pnpm build
+          npm run wasm:build
+          npm run wasm:sync
+          npm run build
 
       - name: Note that publishing is disabled
         if: env.HAS_NPM_TOKEN != 'true'
@@ -77,8 +75,8 @@ jobs:
       - name: Version or publish
         uses: changesets/action@v1
         with:
-          version: pnpm changeset version
-          publish: ${{ env.HAS_NPM_TOKEN == 'true' && 'pnpm changeset publish' || '' }}
+          version: npm run changeset:version
+          publish: ${{ env.HAS_NPM_TOKEN == 'true' && 'npm run changeset:publish' || '' }}
           commit: 'chore(release): version packages'
           title: 'chore(release): version packages'
         env:

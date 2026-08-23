@@ -83,7 +83,7 @@ const EXPECTED = [
 const dist = join(pkg, 'dist');
 
 if (!existsSync(dist)) {
-	problems.push('dist/ is missing — run `pnpm build` before checking the documentation');
+	problems.push('dist/ is missing — run `npm run build` before checking the documentation');
 } else {
 	const declarations = walk(dist, (name) => name.endsWith('.d.ts'), [])
 		.map((path) => readFileSync(path, 'utf8'))

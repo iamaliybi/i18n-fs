@@ -48,7 +48,7 @@ function assertVersionsAgree(core: EdgeCore): EdgeCore {
 		throw new Error(
 			`[i18n-fs] The compiled core is version ${compiled} but the package is ${VERSION}. ` +
 				'The two encode the same routing and resolution rules, so a mismatch would ' +
-				'silently produce wrong output. Run `pnpm bootstrap` to rebuild both.',
+				'silently produce wrong output. Run `npm run bootstrap` to rebuild both.',
 		);
 	}
 

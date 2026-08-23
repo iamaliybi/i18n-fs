@@ -28,38 +28,36 @@ jobs:
         with:
           version: v0.13.1
 
-      - uses: pnpm/action-setup@v4
-
       - uses: actions/setup-node@v4
         with:
           node-version-file: .nvmrc
-          cache: pnpm
+          cache: npm
 
-      - run: pnpm install --frozen-lockfile
+      - run: npm ci
 
       # Also enforces the per-target gzip budgets. The Edge build is the one
       # that matters: it runs on every request, and nothing should quietly grow
       # it. See docs/adr/0001-wasm-boundary.md.
       - name: Build WASM (all three targets)
-        run: pnpm wasm:build
+        run: npm run wasm:build
 
       - name: Sync WASM into the package
-        run: pnpm wasm:sync
+        run: npm run wasm:sync
 
       - name: Typecheck
-        run: pnpm typecheck
+        run: npm run typecheck
 
       - name: Build package
-        run: pnpm build
+        run: npm run build
 
       # Documentation naming a function that was renamed is worse than none: it
       # sends someone looking for something that is not there. Checked here for
       # the same reason the types are.
       - name: Check the documentation
-        run: pnpm check:docs
+        run: npm run check:docs
 
       - name: Test
-        run: pnpm test
+        run: npm run test
 
       # The published layout differs from the source layout: `package.json`
       # imports resolve to `dist`, and the Node glue needs its CommonJS marker.
@@ -137,26 +135,15 @@ jobs:
         with:
           version: v0.13.1
 
-      - uses: pnpm/action-setup@v4
-
       - uses: actions/setup-node@v4
         with:
           node-version-file: .nvmrc
-          cache: pnpm
+          cache: npm
 
-      - run: pnpm install --frozen-lockfile
-      - run: pnpm wasm:build
-      - run: pnpm wasm:sync
-      - run: pnpm build
-
-      # pnpm creates a package's bin shims by looking at the file the `bin`
-      # field points at, and `dist/cli/main.js` does not exist during the first
-      # install. A second install alone is not enough — pnpm sees an up-to-date
-      # tree and does nothing — so the tree is cleared first.
-      - name: Link the CLI now that it exists
-        run: |
-          node scripts/relink.mjs
-          pnpm install --frozen-lockfile
+      - run: npm ci
+      - run: npm run wasm:build
+      - run: npm run wasm:sync
+      - run: npm run build
 
       # The examples are part of the test suite, not samples. They are the only
       # place the real matcher, the real Edge runtime and the real WebAssembly
@@ -167,7 +154,7 @@ jobs:
       # `proxy`, Next.js 15 uses `middleware`. Both run the same assertions from
       # examples/shared, so "it works on both" is proven rather than assumed.
       - name: Build the examples
-        run: pnpm example
+        run: npm run example
 
       - name: End-to-end routing
-        run: pnpm example:test
+        run: npm run example:test
