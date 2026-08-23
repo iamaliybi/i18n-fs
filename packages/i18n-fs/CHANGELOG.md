@@ -1,5 +1,65 @@
 # i18n-fs
 
+## 0.2.0
+
+### Minor Changes
+
+- 945a703: Error codes are numbers you can import, and the proxy has its Next.js 16 name.
+
+  **Breaking.** `error.code` was a string like `'KEY_NOT_FOUND'`; it is now a
+  number, and `ErrorCode` is a value you import rather than a type you can only
+  annotate with:
+
+  ```ts
+  import { ErrorCode, errorCodeName, isLookupError } from 'i18n-fs';
+
+  if (error.code === ErrorCode.KeyNotFound) { … }
+  ```
+
+  Codes are grouped so a whole class of problem is one comparison away — `1xx`
+  the namespace could not be used, `2xx` the lookup inside it failed, `3xx`
+  formatting, `4xx` configuration — with `isNamespaceError` and `isLookupError`
+  for the common cases. Diagnostics print the name beside the number, because a
+  console is read by people.
+
+  **`createI18nProxy`.** Next.js 16 renamed the file convention from `middleware`
+  to `proxy` and deprecated the old name. `createI18nProxy` and the
+  `i18n-fs/proxy` entry point match it; `createI18nMiddleware` is the identical
+  function and still exported, so upgrading Next.js does not force two changes at
+  once.
+
+  **`withI18nFs` is deprecated and now returns your config untouched.** It enabled
+  a webpack experiment the package no longer needs, and Next.js 16 rejects a
+  project that has a `webpack` config and no `turbopack` config — so calling it
+  broke the build. **No `next.config` changes are needed at all**, verified on
+  Next.js 15 with `middleware.ts` and Next.js 16 with `proxy.ts`.
+
+### Patch Changes
+
+- 356122e: Complete documentation.
+
+  Seven guides under `docs/guide/`: getting started, folder structure,
+  translating, routing, the proxy, the CLI, errors, and a full API reference by
+  entry point.
+
+  The gaps this closes:
+
+  - **`app/[locale]/` was never mentioned.** It is required in every prefix mode
+    including `never`, because the proxy always rewrites to a locale-prefixed
+    internal path even when the URL shows none.
+  - **`t.array`, `t.rich`, `t.has` and `t.raw`** each have a section now, rather
+    than a line in a list.
+  - **Routing strategies** are explained with their trade-offs, not just named.
+  - **The proxy** has a guide covering the Next.js 16 rename, the matcher's
+    double-backslash trap, composition and troubleshooting.
+
+  `README.md` now leads with what actually distinguishes the package rather than
+  with a fallback policy.
+
+  `pnpm check:docs` verifies every relative link resolves, every documented export
+  exists in the built declarations, no documented name has been renamed away, and
+  the error code table matches the source. It runs in CI.
+
 ## 0.1.1
 
 ### Patch Changes
