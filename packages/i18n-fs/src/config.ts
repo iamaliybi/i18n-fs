@@ -132,51 +132,35 @@ export const CONFIG_DEFAULTS = {
 } as const satisfies Partial<ResolvedI18nFsConfig>;
 
 /**
- * The shape of the bits of `next.config` that {@link withI18nFs} touches.
+ * The shape `withI18nFs` accepts.
  *
  * Typed structurally rather than against `NextConfig` so this entry point does
  * not need Next.js installed to type-check.
  */
 export interface MinimalNextConfig {
-	webpack?: ((config: WebpackConfig, context: unknown) => WebpackConfig) | undefined;
-	[key: string]: unknown;
-}
-
-interface WebpackConfig {
-	experiments?: Record<string, unknown> | undefined;
 	[key: string]: unknown;
 }
 
 /**
- * Wrap `next.config` so the WebAssembly core can load in middleware.
+ * Formerly wrapped `next.config` so the WebAssembly core could load.
  *
- * The Edge middleware imports a `.wasm` file, and webpack has kept WebAssembly
- * behind an experiment flag since v5. Without this the build fails with
- * "module is not flagged as WebAssembly module", which is a genuinely
- * unhelpful place for someone to start debugging.
+ * @deprecated No longer necessary, and harmful on Next.js 16. It now returns
+ * the configuration unchanged.
  *
- * ```js
- * // next.config.mjs
- * import { withI18nFs } from 'i18n-fs/config';
+ * It used to enable webpack's `asyncWebAssembly` experiment, because the Edge
+ * and Node binaries were imported as WebAssembly modules. Both are embedded as
+ * bytes now, so nothing imports a `.wasm` module except the browser build —
+ * which reaches it through `new URL(..., import.meta.url)`, an ordinary asset
+ * reference every bundler already understands.
  *
- * export default withI18nFs({});
- * ```
+ * Worse than unnecessary: Next.js 16 defaults to Turbopack and rejects a
+ * project that has a `webpack` config and no `turbopack` config. Adding one was
+ * enough to fail the build outright. Returning the configuration untouched
+ * fixes that for anyone who already calls this.
  *
- * Only the Edge build needs this. The Node build embeds its binary rather than
- * loading it from disk, precisely so that no bundler configuration stands
- * between an application and a working server.
- *
- * Turbopack handles WebAssembly natively, so this is inert there.
+ * Verified with no wrapper at all on Next.js 15 with `middleware.ts` and
+ * Next.js 16 with `proxy.ts`.
  */
 export function withI18nFs<T extends MinimalNextConfig>(nextConfig: T): T {
-	return {
-		...nextConfig,
-		webpack(config: WebpackConfig, context: unknown) {
-			// The Edge middleware imports a `.wasm` module, and webpack has kept
-			// WebAssembly behind an experiment flag since v5.
-			config.experiments = { ...config.experiments, asyncWebAssembly: true };
-			return nextConfig.webpack ? nextConfig.webpack(config, context) : config;
-		},
-	};
+	return nextConfig;
 }
-

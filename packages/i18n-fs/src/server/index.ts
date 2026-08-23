@@ -36,6 +36,15 @@ export {
 
 export { getTranslation, resetReporter } from './translation.js';
 
+export {
+	ERROR_CODE_NAMES,
+	ErrorCode,
+	errorCodeName,
+	isErrorCode,
+	isLookupError,
+	isNamespaceError,
+} from '../errors.js';
+
 export { I18nProvider, type I18nProviderProps } from './provider.js';
 
 export { getPathname, permanentRedirect, redirect } from './navigation.js';

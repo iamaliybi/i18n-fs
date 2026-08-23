@@ -14,6 +14,7 @@ import { readFile } from 'node:fs/promises';
 import { join, normalize, sep } from 'node:path';
 import type { ResolvedI18nFsConfig } from '../config.js';
 import { loadFullCore } from '../core/index.js';
+import { ErrorCode } from '../errors.js';
 import type { I18nErrorPayload } from '../core/types.js';
 import type { NamespaceState } from '../translator.js';
 
@@ -105,7 +106,7 @@ async function readNamespace(
 		return {
 			status: 'failed',
 			error: error(
-				'NAMESPACE_NOT_FOUND',
+				ErrorCode.NamespaceNotFound,
 				locale,
 				namespace,
 				'a namespace must be a relative path inside the messages directory',
@@ -122,7 +123,7 @@ async function readNamespace(
 		return {
 			status: 'failed',
 			error: error(
-				'NAMESPACE_NOT_FOUND',
+				ErrorCode.NamespaceNotFound,
 				locale,
 				namespace,
 				cause instanceof Error ? cause.message : String(cause),
@@ -143,7 +144,7 @@ async function readNamespace(
 
 		return {
 			status: 'failed',
-			error: error('INVALID_JSON', locale, namespace, String(cause)),
+			error: error(ErrorCode.InvalidJson, locale, namespace, String(cause)),
 		};
 	}
 }

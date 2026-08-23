@@ -17,11 +17,19 @@ export { loadCore, loadFullCore, hasMessageSupport } from './core/index.js';
 
 export { VERSION } from './version.js';
 
+export {
+	ERROR_CODE_NAMES,
+	ErrorCode,
+	errorCodeName,
+	isErrorCode,
+	isLookupError,
+	isNamespaceError,
+} from './errors.js';
+
 export type {
 	Action,
 	ConfigIssue,
 	Decision,
-	ErrorCode,
 	I18nErrorPayload,
 	Interpolation,
 	LocaleSource,

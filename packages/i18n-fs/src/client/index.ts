@@ -12,6 +12,15 @@
 export { useTranslation, resetClientReporter } from './useTranslation.js';
 
 export {
+	ERROR_CODE_NAMES,
+	ErrorCode,
+	errorCodeName,
+	isErrorCode,
+	isLookupError,
+	isNamespaceError,
+} from '../errors.js';
+
+export {
 	Link,
 	usePathname,
 	useRouter,

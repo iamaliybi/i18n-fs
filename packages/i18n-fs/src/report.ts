@@ -8,18 +8,23 @@
  * shape" actually happened.
  */
 
-import type { ErrorCode, I18nErrorPayload } from './core/types.js';
+import { ErrorCode, errorCodeName } from './errors.js';
+import type { I18nErrorPayload } from './core/types.js';
 
 /** Human-readable wording per code, kept in one place. */
 const WORDING: Record<ErrorCode, (error: I18nErrorPayload) => string> = {
-	NAMESPACE_NOT_FOUND: (e) => `could not load namespace "${e.namespace}" for locale "${e.locale}"`,
-	INVALID_JSON: (e) => `namespace "${e.namespace}" for locale "${e.locale}" is not valid JSON`,
-	SCOPE_NOT_FOUND: (e) =>
+	[ErrorCode.NamespaceNotFound]: (e) =>
+		`could not load namespace "${e.namespace}" for locale "${e.locale}"`,
+	[ErrorCode.InvalidJson]: (e) =>
+		`namespace "${e.namespace}" for locale "${e.locale}" is not valid JSON`,
+	[ErrorCode.ScopeNotFound]: (e) =>
 		`scope "${e.scope ?? ''}" does not exist in "${e.namespace}" for locale "${e.locale}"`,
-	KEY_NOT_FOUND: (e) => `key "${path(e)}" does not exist in "${e.namespace}" for locale "${e.locale}"`,
-	TYPE_MISMATCH: (e) => `key "${path(e)}" in "${e.namespace}" has an unexpected type`,
-	PARAM_MISSING: (e) => `message "${path(e)}" in "${e.namespace}" expects a parameter that was not provided`,
-	INVALID_CONFIG: () => 'the i18n-fs configuration is invalid',
+	[ErrorCode.KeyNotFound]: (e) =>
+		`key "${path(e)}" does not exist in "${e.namespace}" for locale "${e.locale}"`,
+	[ErrorCode.TypeMismatch]: (e) => `key "${path(e)}" in "${e.namespace}" has an unexpected type`,
+	[ErrorCode.ParamMissing]: (e) =>
+		`message "${path(e)}" in "${e.namespace}" expects a parameter that was not provided`,
+	[ErrorCode.InvalidConfig]: () => 'the i18n-fs configuration is invalid',
 };
 
 function path(error: I18nErrorPayload): string {
@@ -36,7 +41,9 @@ export function formatError(error: I18nErrorPayload): string {
 	const describe = WORDING[error.code] ?? (() => 'lookup failed');
 	const detail = error.detail ? ` (${error.detail})` : '';
 
-	return `[i18n-fs] ${error.code}: ${describe(error)}.${detail}`;
+	// Name and number together. Switching on the number is what code does;
+	// reading the name is what a person does, and a console is for people.
+	return `[i18n-fs] ${errorCodeName(error.code)} (${error.code}): ${describe(error)}.${detail}`;
 }
 
 /** Reports each distinct problem once. */

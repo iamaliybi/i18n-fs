@@ -12,6 +12,7 @@ import { join } from 'node:path';
 import { afterEach, describe, expect, it } from 'vitest';
 import type { ResolvedI18nFsConfig } from '../src/config.js';
 import { loadFullCore } from '../src/core/index.js';
+import { ErrorCode } from '../src/errors.js';
 import {
 	clearMessageCache,
 	isSafeNamespace,
@@ -140,7 +141,7 @@ describe('namespace safety', () => {
 
 		expect(state.status).toBe('failed');
 		if (state.status === 'failed') {
-			expect(state.error.code).toBe('NAMESPACE_NOT_FOUND');
+			expect(state.error.code).toBe(ErrorCode.NamespaceNotFound);
 		}
 	});
 });
@@ -171,7 +172,7 @@ describe('loading namespaces', () => {
 
 		expect(state.status).toBe('failed');
 		if (state.status === 'failed') {
-			expect(state.error.code).toBe('NAMESPACE_NOT_FOUND');
+			expect(state.error.code).toBe(ErrorCode.NamespaceNotFound);
 			expect(state.error.detail).toBeTruthy();
 		}
 	});
@@ -182,7 +183,7 @@ describe('loading namespaces', () => {
 
 		expect(state.status).toBe('failed');
 		if (state.status === 'failed') {
-			expect(state.error.code).toBe('INVALID_JSON');
+			expect(state.error.code).toBe(ErrorCode.InvalidJson);
 			expect(state.error.detail).toMatch(/line \d+ column \d+/);
 		}
 	});

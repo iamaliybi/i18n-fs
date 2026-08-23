@@ -10,6 +10,7 @@
 import { createElement, Fragment, type ReactNode } from 'react';
 import type { FullCore, I18nErrorPayload, MessageNode, Store } from './core/types.js';
 import type { Reporter } from './report.js';
+import { ErrorCode } from './errors.js';
 
 /** Values substituted into `{placeholder}` markers. */
 export type TranslationParams = Record<string, string | number>;
@@ -95,7 +96,7 @@ export function createTranslator(context: TranslatorContext): Translator {
 		}
 
 		report({
-			code: 'KEY_NOT_FOUND',
+			code: ErrorCode.KeyNotFound,
 			locale,
 			namespace,
 			scope: scope ?? null,
@@ -135,7 +136,7 @@ export function createTranslator(context: TranslatorContext): Translator {
 
 		for (const name of result.missing) {
 			report({
-				code: 'PARAM_MISSING',
+				code: ErrorCode.ParamMissing,
 				locale,
 				namespace,
 				scope: scope ?? null,
@@ -165,7 +166,7 @@ export function createTranslator(context: TranslatorContext): Translator {
 			params: params ?? {},
 			onMissingParam: (name) =>
 				report({
-					code: 'PARAM_MISSING',
+					code: ErrorCode.ParamMissing,
 					locale,
 					namespace,
 					scope: scope ?? null,

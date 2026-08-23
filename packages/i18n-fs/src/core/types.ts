@@ -7,15 +7,9 @@
  * exactly the boundary where it matters most.
  */
 
-/** Why a lookup failed. Mirrors `i18n_fs_core::ErrorCode`. */
-export type ErrorCode =
-	| 'NAMESPACE_NOT_FOUND'
-	| 'INVALID_JSON'
-	| 'SCOPE_NOT_FOUND'
-	| 'KEY_NOT_FOUND'
-	| 'TYPE_MISMATCH'
-	| 'PARAM_MISSING'
-	| 'INVALID_CONFIG';
+import type { ErrorCode } from '../errors.js';
+
+export type { ErrorCode };
 
 /** A failed lookup, with enough context to find the offending file and key. */
 export interface I18nErrorPayload {
@@ -29,7 +23,8 @@ export interface I18nErrorPayload {
 
 /** One problem found in a configuration snapshot. */
 export interface ConfigIssue {
-	code: 'INVALID_CONFIG';
+	/** Always {@link ErrorCode.InvalidConfig}. */
+	code: ErrorCode;
 	field: string;
 	message: string;
 }

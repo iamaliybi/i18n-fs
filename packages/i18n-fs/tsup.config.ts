@@ -18,6 +18,7 @@ export default defineConfig({
 		'src/client/index.ts',
 		'src/navigation.ts',
 		'src/middleware.ts',
+		'src/proxy.ts',
 	],
 	// One string, not the whole manifest: importing package.json would inline it
 	// into every entry point.
