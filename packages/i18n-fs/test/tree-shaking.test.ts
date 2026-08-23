@@ -18,22 +18,12 @@
  * of which ships no `.wasm` at all.
  */
 
-import { execFileSync } from 'node:child_process';
-import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
-import { createRequire } from 'node:module';
-import { tmpdir } from 'node:os';
-import { join } from 'node:path';
+import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
-import { afterAll, describe, expect, it } from 'vitest';
+import { buildSync } from 'esbuild';
+import { describe, expect, it } from 'vitest';
 
 const dist = fileURLToPath(new URL('../dist/', import.meta.url));
-const esbuild = join(createRequire(import.meta.url).resolve('esbuild/package.json'), '..', 'bin', 'esbuild');
-
-const work = mkdtempSync(join(tmpdir(), 'i18n-fs-shake-'));
-
-afterAll(() => {
-	rmSync(work, { recursive: true, force: true });
-});
 
 /**
  * Bundle a single named import and return the result.
@@ -42,26 +32,26 @@ afterAll(() => {
  * question is what comes with it, not whether it survives on its own.
  */
 function bundle(entry: string, symbol: string): { kb: number; code: string } {
-	const source = join(work, `${entry.replace(/\W/g, '_')}_${symbol}.mjs`);
-	const output = `${source}.out`;
+	// esbuild's own API rather than its executable. Spawning it meant guessing
+	// where the binary lives, which worked on one platform and failed on CI —
+	// and the failure arrived as "command failed" with the reason swallowed.
+	const result = buildSync({
+		stdin: {
+			contents: `import { ${symbol} } from ${JSON.stringify(dist + entry)};\nglobalThis.__keep = ${symbol};\n`,
+			resolveDir: dist,
+			sourcefile: `probe-${symbol}.mjs`,
+			loader: 'js',
+		},
+		bundle: true,
+		format: 'esm',
+		minify: true,
+		platform: 'node',
+		external: ['react', 'react-dom', 'next', 'next/*'],
+		write: false,
+		logLevel: 'silent',
+	});
 
-	writeFileSync(
-		source,
-		`import { ${symbol} } from ${JSON.stringify(dist + entry)};\nglobalThis.__keep = ${symbol};\n`,
-	);
-
-	execFileSync(
-		process.execPath,
-		[
-			esbuild, source,
-			'--bundle', '--format=esm', '--minify', '--platform=node',
-			'--external:react', '--external:react-dom', '--external:next', '--external:next/*',
-			`--outfile=${output}`, '--log-level=error',
-		],
-		{ stdio: 'pipe' },
-	);
-
-	const code = readFileSync(output, 'utf8');
+	const code = result.outputFiles[0]?.text ?? '';
 	return { kb: Buffer.byteLength(code) / 1024, code };
 }
 
