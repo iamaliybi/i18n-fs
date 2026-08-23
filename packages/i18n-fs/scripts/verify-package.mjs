@@ -4,7 +4,7 @@
 // exactly the kind of thing that fails silently and is discovered by whoever
 // installs the package rather than by whoever published it.
 
-import { copyFileSync, existsSync, readFileSync } from 'node:fs';
+import { copyFileSync, existsSync, readFileSync, writeFileSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 
@@ -31,9 +31,23 @@ function requireFirstLine(file, expected, why) {
 
 // The README and the licence are single-sourced at the repository root; copying
 // them at publish time is what stops the npm page drifting from the repository.
-for (const file of ['README.md', 'LICENSE']) {
-	copyFileSync(join(root, file), join(pkg, file));
-}
+//
+// The README's relative links have to become absolute on the way. npm resolves
+// them against the package's directory in the repository, so `docs/guide/…`
+// would point at `packages/i18n-fs/docs/guide/…`, which does not exist — every
+// documentation link on the npm page would 404.
+const REPO = 'https://github.com/iamaliybi/i18n-fs';
+
+const readme = readFileSync(join(root, 'README.md'), 'utf8').replace(
+	/\]\((?!https?:|#|mailto:)([^)]+)\)/g,
+	(_match, target) => {
+		const kind = target.endsWith('/') ? 'tree' : 'blob';
+		return `](${REPO}/${kind}/main/${target.replace(/\/$/, '')})`;
+	},
+);
+
+writeFileSync(join(pkg, 'README.md'), readme);
+copyFileSync(join(root, 'LICENSE'), join(pkg, 'LICENSE'));
 
 // Every entry point named in `exports` has to exist.
 const manifest = JSON.parse(readFileSync(join(pkg, 'package.json'), 'utf8'));

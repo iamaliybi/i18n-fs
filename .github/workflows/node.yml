@@ -52,6 +52,12 @@ jobs:
       - name: Build package
         run: pnpm build
 
+      # Documentation naming a function that was renamed is worse than none: it
+      # sends someone looking for something that is not there. Checked here for
+      # the same reason the types are.
+      - name: Check the documentation
+        run: pnpm check:docs
+
       - name: Test
         run: pnpm test
 
