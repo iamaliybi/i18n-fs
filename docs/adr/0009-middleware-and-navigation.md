@@ -27,7 +27,7 @@ This is the important one, and it was found the hard way.
   `Failed to parse URL from /_next/static/wasm/….wasm` on the first request.
 
 Next's documented answer for the Node half is `serverExternalPackages`. It was
-tried, and it does work — but only for a real install (a pnpm workspace symlink
+tried, and it does work — but only for a real install (a workspace symlink
 resolves outside `node_modules`, so Next skips it), and externalising the whole
 package takes the `'use client'` entries with it, which breaks the client
 boundary. A cure worse than the disease.

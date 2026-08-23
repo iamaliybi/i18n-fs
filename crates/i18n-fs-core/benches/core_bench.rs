@@ -78,8 +78,16 @@ fn bench_store(c: &mut Criterion) {
 	});
 
 	let store = MessageStore::from_json("fa", "bench", &raw).unwrap();
-	c.bench_function("store/resolve", |b| {
+
+	// Both call shapes, because they cost different things. A scoped lookup has
+	// to join scope and key into one string before it can hash; an unscoped one
+	// hashes the caller's key as it stands. Measuring only the first hid that.
+	c.bench_function("store/resolve (scoped)", |b| {
 		b.iter(|| store.resolve_text(black_box(Some("scope20")), black_box("key12")));
+	});
+
+	c.bench_function("store/resolve (unscoped)", |b| {
+		b.iter(|| store.resolve_text(black_box(None), black_box("scope20.key12")));
 	});
 }
 

@@ -62,7 +62,9 @@ runtime, where it was never compiled in.
 
 ### `getTranslation(namespace, scope?): Promise<Translator>`
 
-A translator for the request's locale. See [translating](./translating.md).
+A translator for the request's locale. Reads the file with `fs` and caches it
+per process; in development the file's timestamp is checked first, so an edit
+shows up on the next render. See [translating](./translating.md).
 
 ### `getLocale(): Promise<string>`
 
@@ -115,7 +117,12 @@ Lower-level loading, exported for tooling.
 ### `useTranslation(namespace, scope?): Translator`
 
 The same translator as `getTranslation`, synchronously. Suspends while fetching
-a namespace the server did not send.
+a namespace the server did not send — which replaces the whole subtree under the
+nearest `<Suspense>` boundary, so put one close to the component that fetches.
+Named in `<I18nProvider namespaces>`, it does not suspend at all.
+
+The result of a fetch, including a failed one, is kept until the page is
+reloaded.
 
 ### `useLocale(): string`
 

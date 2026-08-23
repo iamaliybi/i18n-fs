@@ -3,7 +3,7 @@
 	"private": true,
 	"version": "0.0.0",
 	"engines": {
-		"node": ">=20.11"
+		"node": ">=22.18"
 	},
 	"scripts": {
 		"bootstrap": "npm install && npm run wasm:build && npm run wasm:sync && npm run build",

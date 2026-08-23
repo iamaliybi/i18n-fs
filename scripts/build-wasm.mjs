@@ -50,7 +50,22 @@ const BUILDS = [
 		// until that lands.
 		budgetKb: 65,
 	},
-	{ name: 'browser', target: 'web', features: ['full'], budgetKb: 90 },
+	{
+		name: 'browser',
+		target: 'web',
+		features: ['full'],
+		// Re-baselined from 90 KB, deliberately rather than because a build went
+		// red: removing the per-lookup allocation cost 0.5 KB gzip and left about
+		// 100 bytes of headroom, so the next change to any `full` code would have
+		// broken CI for a reason unrelated to it. A budget that has to be raised
+		// under pressure is not measuring anything.
+		//
+		// This is the binary a browser downloads, so it is the one where growth
+		// is worth arguing about. The Edge binary — the one that runs on every
+		// request — is unaffected by anything under `full` and has its own budget
+		// above.
+		budgetKb: 95,
+	},
 	{
 		name: 'node',
 		// `web`, not `nodejs`, even though this build runs under Node. The

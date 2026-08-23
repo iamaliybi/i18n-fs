@@ -10,7 +10,7 @@
  * and surfaced later, per key, through the normal fallback path.
  */
 
-import { readFile } from 'node:fs/promises';
+import { readFile, stat } from 'node:fs/promises';
 import { join, normalize, sep } from 'node:path';
 import type { ResolvedI18nFsConfig } from '../config.js';
 import { loadFullCore } from '../core/index.js';
@@ -24,7 +24,49 @@ export type MessageBundle = Map<string, NamespaceState>;
 /** The raw JSON of each namespace, for handing to the client. */
 export type SerialisableBundle = Record<string, unknown>;
 
-const caches = new Map<string, Map<string, NamespaceState>>();
+/** A loaded namespace, with the file timestamp it was loaded from. */
+type CacheEntry = { state: NamespaceState; stamp: number };
+
+const caches = new Map<string, Map<string, CacheEntry>>();
+
+/**
+ * The stamp used when the file is not being watched at all.
+ *
+ * A constant, so every production lookup compares equal and hits the cache
+ * without going near the disk.
+ */
+const NOT_WATCHED = 0;
+
+/**
+ * What the developer should do about a server-side failure.
+ *
+ * The two answers are genuinely different. In development the file is watched,
+ * so a correction is picked up on the next render and the only reason to
+ * restart is if it somehow is not. In production nothing is watched at all.
+ */
+function hint(config: ResolvedI18nFsConfig): string {
+	return config.debug
+		? 'the file is re-read when it changes; restart the dev server if this persists'
+		: 'the server keeps this result until it restarts';
+}
+
+/** Last-modified time of a namespace file, or -1 if it cannot be read. */
+async function modifiedAt(
+	config: ResolvedI18nFsConfig,
+	locale: string,
+	namespace: string,
+	cwd: string,
+): Promise<number> {
+	if (!isSafeNamespace(namespace)) return -1;
+
+	try {
+		return (await stat(namespacePath(cwd, config, locale, namespace.split('/').join(sep)))).mtimeMs;
+	} catch {
+		// Absent counts as its own state: a file that appears later has a
+		// timestamp, which differs, so it is picked up rather than staying missing.
+		return -1;
+	}
+}
 
 /** Absolute path of a namespace file. */
 export function namespacePath(
@@ -81,16 +123,23 @@ export async function loadNamespace(
 		caches.set(locale, cache);
 	}
 
+	// In development the file's timestamp is checked before the cache is
+	// trusted. Message files live under `public/`, so editing one changes no
+	// module and Next.js has nothing to reload — without this the developer
+	// edits a translation, sees the old text, and reasonably concludes the
+	// package is broken. Production never stats: the files cannot change under
+	// a running build, and one stat per render per namespace would be pure loss.
+	const stamp = config.debug ? await modifiedAt(config, locale, namespace, cwd) : NOT_WATCHED;
+
 	const cached = cache.get(namespace);
-	if (cached) return cached;
+	if (cached && cached.stamp === stamp) return cached.state;
 
 	const state = await readNamespace(config, locale, namespace, cwd);
 
-	// In development the file may be fixed and the page reloaded, so a failure
-	// is not cached — otherwise the developer would have to restart the server
-	// to see their own correction.
+	// A failure is still not cached in development, so a file that is corrected
+	// is picked up even if its timestamp somehow matches.
 	if (state.status === 'ready' || !config.debug) {
-		cache.set(namespace, state);
+		cache.set(namespace, { state, stamp });
 	}
 
 	return state;
@@ -126,7 +175,7 @@ async function readNamespace(
 				ErrorCode.NamespaceNotFound,
 				locale,
 				namespace,
-				cause instanceof Error ? cause.message : String(cause),
+				`${cause instanceof Error ? cause.message : String(cause)}; ${hint(config)}`,
 			),
 		};
 	}
@@ -139,7 +188,11 @@ async function readNamespace(
 		// The core already distinguishes INVALID_JSON and carries the parser's
 		// line and column; pass it through rather than flattening it.
 		if (typeof cause === 'object' && cause !== null && 'code' in cause) {
-			return { status: 'failed', error: cause as I18nErrorPayload };
+			const payload = cause as I18nErrorPayload;
+			return {
+				status: 'failed',
+				error: { ...payload, detail: [payload.detail, hint(config)].filter(Boolean).join('; ') },
+			};
 		}
 
 		return {
