@@ -113,3 +113,13 @@ pass, so tooling and humans cannot disagree about what was found.
 Node 22.18 or newer. That is the version that reads a TypeScript config file
 without a bundler, which is why the CLI has no dependencies at all. If you are
 on an older Node, rename the config to `i18n-fs.config.mjs` and it will load.
+
+<!-- nav:start -->
+
+---
+
+| | | |
+| :-- | :--: | --: |
+| ← [The proxy](./proxy.md) | [All guides](../README.md) | [Errors and fallbacks](./errors.md) → |
+
+<!-- nav:end -->

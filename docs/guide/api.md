@@ -290,3 +290,13 @@ t.raw(key): string | string[] | undefined
 `params` is `Record<string, string | number>`; for `t.rich` a parameter may also
 be a `ReactNode`. `options` is `{ fallback?: string }` — the only fallback there
 is.
+
+<!-- nav:start -->
+
+---
+
+| | | |
+| :-- | :--: | --: |
+| ← [Errors and fallbacks](./errors.md) | [All guides](../README.md) |  |
+
+<!-- nav:end -->

@@ -17,6 +17,8 @@
 		"build": "npm run build --workspace=i18n-fs",
 		"typecheck": "npm run typecheck --workspace=i18n-fs",
 		"check:docs": "node scripts/check-docs.mjs",
+		"docs:nav": "node scripts/docs-nav.mjs",
+		"docs:nav:check": "node scripts/docs-nav.mjs --check",
 		"measure": "node scripts/measure.mjs",
 		"measure:check": "node scripts/measure.mjs --check",
 		"test": "npm run test --workspace=i18n-fs",

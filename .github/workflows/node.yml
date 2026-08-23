@@ -56,6 +56,12 @@ jobs:
       - name: Check the documentation
         run: npm run check:docs
 
+      # The guides link to each other in reading order, generated rather than
+      # hand-written: a footer maintained by hand is correct on the day it is
+      # written, and inserting a page means editing two neighbours.
+      - name: Check the guide navigation
+        run: npm run docs:nav:check
+
       - name: Test
         run: npm run test
 

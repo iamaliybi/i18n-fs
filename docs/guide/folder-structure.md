@@ -147,3 +147,13 @@ disk, so a namespace can never read outside the messages directory.
 
 Message files are served by the web server like any other file in `public/`.
 They are readable by anyone. Do not put anything in them you would not publish.
+
+<!-- nav:start -->
+
+---
+
+| | | |
+| :-- | :--: | --: |
+| ← [Getting started](./getting-started.md) | [All guides](../README.md) | [Translating](./translating.md) → |
+
+<!-- nav:end -->

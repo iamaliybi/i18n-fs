@@ -2,6 +2,9 @@
 
 ## Guides
 
+The guides are written to be read in this order, and each one links to the next,
+so you can start at the top and keep going. Every page also links back here.
+
 | | |
 | --- | --- |
 | [Getting started](guide/getting-started.md) | nothing to a translated page, in nine steps |

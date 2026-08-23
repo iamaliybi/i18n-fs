@@ -206,3 +206,13 @@ const href = await getPathname('/about');
 ```
 
 Locale-free paths, like the client wrappers.
+
+<!-- nav:start -->
+
+---
+
+| | | |
+| :-- | :--: | --: |
+| ← [Translating](./translating.md) | [All guides](../README.md) | [The proxy](./proxy.md) → |
+
+<!-- nav:end -->
