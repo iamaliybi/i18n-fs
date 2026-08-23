@@ -7,9 +7,16 @@
  * has to see. If the server provider imported this module's source directly,
  * the bundler would inline it into the server chunk and the boundary would be
  * gone; importing it by package path keeps it a real module.
+ *
+ * What is exported here is what an application uses. The loading and caching
+ * machinery behind `useTranslation` is deliberately not: every exported name is
+ * a promise to keep, and those were never meant to be called from outside.
+ * Navigation lives in `i18n-fs/navigation`.
  */
 
-export { useTranslation, resetClientReporter } from './useTranslation.js';
+export { useTranslation } from './useTranslation.js';
+
+export { usePrefetch } from './prefetch.js';
 
 export {
 	ERROR_CODE_NAMES,
@@ -19,28 +26,6 @@ export {
 	isLookupError,
 	isNamespaceError,
 } from '../errors.js';
-
-export {
-	Link,
-	usePathname,
-	useRouter,
-	useLocaleSwitcher,
-	type LinkProps,
-	type LocaleRouter,
-	type LocaleSwitcher,
-} from './navigation.js';
-
-export {
-	clearNamespaceCache,
-	hasNamespace,
-	loadClientNamespace,
-	namespaceUrl,
-	prefetchNamespace,
-	seedNamespace,
-	stateFromPayload,
-} from './namespaces.js';
-
-export { usePrefetch } from './prefetch.js';
 
 export type {
 	NamespaceState,
@@ -54,7 +39,6 @@ export {
 	I18nClientProvider,
 	useI18nContext,
 	useLocale,
-	useOptionalI18nContext,
 	type I18nClientProviderProps,
 	type I18nContextValue,
 	type MessagePayload,
