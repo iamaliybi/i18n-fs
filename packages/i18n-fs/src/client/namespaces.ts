@@ -13,10 +13,13 @@
  */
 
 import type { ResolvedI18nFsConfig } from '../config.js';
+import { namespaceUrl } from '../paths.js';
 import { loadMessageCore } from '../core/index.js';
 import { ErrorCode } from '../errors.js';
 import type { I18nErrorPayload, MessageCore } from '../core/types.js';
 import type { NamespaceState } from '../translator.js';
+
+export { namespaceUrl };
 
 const cache = new Map<string, Promise<NamespaceState>>();
 
@@ -74,21 +77,6 @@ export function stateFromPayload(
 		}
 		return failure(ErrorCode.InvalidJson, locale, namespace, String(cause));
 	}
-}
-
-/** The public URL of a namespace, with the content hash for cache-busting. */
-export function namespaceUrl(
-	config: ResolvedI18nFsConfig,
-	locale: string,
-	namespace: string,
-	hash?: string,
-): string {
-	const path = `/${config.messagesDir}/${locale}/${namespace}.json`;
-
-	// Files under `public/` are served verbatim and are not fingerprinted, so
-	// the hash is what lets the response be cached immutably and still change
-	// when the content does.
-	return hash ? `${path}?v=${hash}` : path;
 }
 
 async function fetchNamespace(
@@ -173,6 +161,38 @@ export function loadClientNamespace(
 	}
 
 	return pending;
+}
+
+/**
+ * Start loading a namespace without waiting for it.
+ *
+ * The point is that nobody suspends: this is called from an event handler or a
+ * layout effect, the request goes out early, and by the time a component reads
+ * the namespace the answer is already there.
+ *
+ * A prefetch that fails is **not** remembered. A read that fails is cached, so
+ * that one 404 does not become a request per render — but a prefetch is
+ * speculative, and letting a transient blip poison the read that actually needs
+ * the namespace would turn a guess into a permanent fallback. Failing quietly
+ * and leaving the cache empty means the real read starts clean.
+ */
+export function prefetchNamespace(
+	config: ResolvedI18nFsConfig,
+	locale: string,
+	namespace: string,
+	hash?: string,
+): void {
+	const key = keyOf(locale, namespace);
+
+	// Already loaded, already in flight, or already sent by the server.
+	if (cache.has(key)) return;
+
+	const pending = fetchNamespace(config, locale, namespace, hash).then((state) => {
+		if (state.status === 'failed' && cache.get(key) === pending) cache.delete(key);
+		return state;
+	});
+
+	cache.set(key, pending);
 }
 
 /** Seed the cache with something the server already sent. */

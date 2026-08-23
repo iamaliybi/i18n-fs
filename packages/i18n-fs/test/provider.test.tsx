@@ -70,6 +70,61 @@ function Probe() {
 	);
 }
 
+describe('I18nProvider prefetch', () => {
+	// The middle setting between inlining a namespace and not sending it at all:
+	// the browser starts fetching in parallel with the JavaScript, and the HTML
+	// does not grow.
+	const links = () => [...document.querySelectorAll('link[rel="preload"]')];
+
+	it('emits a preload link per prefetched namespace', async () => {
+		render(await I18nProvider({ locale: 'fa', prefetch: ['home'], children: <Probe /> }));
+
+		expect(links()).toHaveLength(1);
+		expect(links()[0]?.getAttribute('href')).toBe('/locales/fa/home.json');
+		expect(links()[0]?.getAttribute('as')).toBe('fetch');
+	});
+
+	it('does not preload what it already sent', async () => {
+		// The payload already has it, so the fetch would never happen and the
+		// browser would report the preload as unused — correctly.
+		render(
+			await I18nProvider({
+				locale: 'fa',
+				namespaces: ['home'],
+				prefetch: ['home'],
+				children: <Probe />,
+			}),
+		);
+
+		expect(screen.getByTestId('namespaces').textContent).toBe('home');
+		expect(links()).toHaveLength(0);
+	});
+
+	it('emits nothing when nothing is prefetched', async () => {
+		render(await I18nProvider({ locale: 'fa', children: <Probe /> }));
+		expect(links()).toHaveLength(0);
+	});
+
+	it('does not repeat a namespace named twice', async () => {
+		render(await I18nProvider({ locale: 'fa', prefetch: ['home', 'home'], children: <Probe /> }));
+		expect(links()).toHaveLength(1);
+	});
+
+	it('carries crossOrigin, without which the browser refuses to reuse it', async () => {
+		// Required even same-origin: a preload without it has different
+		// credentials than the `fetch()` the client makes, so the browser
+		// downloads the file twice and reports the preload as unused. Confirmed
+		// in Chrome, which says "the request credentials mode does not match".
+		render(await I18nProvider({ locale: 'fa', prefetch: ['home'], children: <Probe /> }));
+		expect(links()[0]?.getAttribute('crossorigin')).toBe('anonymous');
+	});
+
+	it('asks for it at low priority, so it does not compete with the page', async () => {
+		render(await I18nProvider({ locale: 'fa', prefetch: ['home'], children: <Probe /> }));
+		expect(links()[0]?.getAttribute('fetchpriority')).toBe('low');
+	});
+});
+
 describe('I18nProvider', () => {
 	it('provides the locale and config to the client tree', async () => {
 		render(await I18nProvider({ locale: 'fa', children: <Probe /> }));

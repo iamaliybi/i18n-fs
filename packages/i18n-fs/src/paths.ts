@@ -110,3 +110,24 @@ function splitOnce(value: string, separator: string): [string, string | undefine
 	if (index === -1) return [value, undefined];
 	return [value.slice(0, index), value.slice(index + 1)];
 }
+
+/**
+ * The public URL of a namespace, with the content hash for cache-busting.
+ *
+ * Lives here rather than beside the client fetch because the server needs it
+ * too, to emit preload links — and a function exported from a `'use client'`
+ * module is a client reference, not something a Server Component can call.
+ */
+export function namespaceUrl(
+	config: ResolvedI18nFsConfig,
+	locale: string,
+	namespace: string,
+	hash?: string,
+): string {
+	const path = `/${config.messagesDir}/${locale}/${namespace}.json`;
+
+	// Files under `public/` are served verbatim and are not fingerprinted, so
+	// the hash is what lets the response be cached immutably and still change
+	// when the content does.
+	return hash ? `${path}?v=${hash}` : path;
+}

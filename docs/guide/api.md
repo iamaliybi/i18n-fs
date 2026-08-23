@@ -105,6 +105,31 @@ tree. Render it in your locale layout.
 need themselves. Anything a Client Component reads on first paint belongs here,
 or it will render its fallback during SSR and fill in after hydration.
 
+`prefetch` names namespaces to start downloading without putting them in the
+payload: it emits `<link rel="preload">`, so the request goes out with the HTML
+and the HTML does not grow. Use it for a client-only subtree or a panel that
+opens shortly after the page settles. Anything already in `namespaces` is
+skipped.
+
+### `usePrefetch(): (...namespaces: string[]) => void`
+
+Starts loading namespaces in the background, from an event handler. Never
+suspends, never throws, returns nothing to await.
+
+```tsx
+const prefetch = usePrefetch();
+const warm = () => prefetch('settings/panel');
+
+<button onPointerEnter={warm} onFocus={warm} onClick={open}>Settings</button>
+```
+
+`onFocus` as well as `onPointerEnter`, since a keyboard user never hovers and a
+touch user has no hover at all.
+
+A prefetch that fails is forgotten rather than cached, so a bad moment while
+guessing cannot decide the answer for the read that actually needs it. Anything
+already loaded, in flight, or sent by the server is skipped.
+
 ### `redirect(href, locale?)` · `permanentRedirect(href, locale?)`
 
 `next/navigation`'s redirects, taking locale-free paths. Like the originals,
