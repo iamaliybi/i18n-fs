@@ -31,7 +31,10 @@ const root = join(pkg, '..', '..');
 const manifest = JSON.parse(readFileSync(join(pkg, 'package.json'), 'utf8')) as {
 	bin: Record<string, string>;
 	files: string[];
+	version: string;
 };
+
+const { version } = manifest;
 
 const targets = Object.values(manifest.bin);
 const [launcher] = targets;
@@ -110,6 +113,19 @@ describe('the lockfile agrees with the manifest', () => {
 			Object.fromEntries(Object.entries(bin).map(([name, path]) => [name, path.replace(/^\.\//, '')]));
 
 		expect(normalise(entry.bin ?? {})).toEqual(normalise(manifest.bin));
+	});
+
+	it('records the same version', () => {
+		// `changeset version` bumps package.json and not the lockfile, so after
+		// every release the committed lockfile named the previous version. `npm
+		// ci` tolerates that, which is why it went unnoticed — the symptom is
+		// that the first `npm install` after a release leaves a modified file
+		// nobody asked for. The release script refreshes it now.
+		const lock = JSON.parse(readFileSync(join(root, 'package-lock.json'), 'utf8')) as {
+			packages: Record<string, { version?: string }>;
+		};
+
+		expect(lock.packages['packages/i18n-fs']?.version).toBe(version);
 	});
 });
 
