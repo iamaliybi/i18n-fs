@@ -105,14 +105,21 @@ jobs:
           echo '{"hero":{"title":"a","bullets":["x"]}}' > "$fixture/public/locales/fa/home.json"
           echo '{"hero":{"title":"b","bullets":["y"]}}' > "$fixture/public/locales/en/home.json"
 
-          node packages/i18n-fs/dist/cli/main.js build --cwd "$fixture" --strict
+          # Through the linked bin, not through dist/cli/main.js directly. The
+          # link is made during `npm ci`, before anything is built, and when it
+          # silently is not made this is the first step that can say so — the
+          # alternative is the example job failing later with `i18n-fs: not
+          # found` and nothing pointing at the cause.
+          test -x ./node_modules/.bin/i18n-fs
+
+          ./node_modules/.bin/i18n-fs build --cwd "$fixture" --strict
           test -f "$fixture/.i18n-fs/messages.d.ts"
           test -f "$fixture/.i18n-fs/manifest.json"
           test -f "$fixture/.i18n-fs/config.mjs"
 
           # A missing key must fail the build, not warn.
           echo '{"hero":{"title":"b"}}' > "$fixture/public/locales/en/home.json"
-          if node packages/i18n-fs/dist/cli/main.js check --cwd "$fixture"; then
+          if ./node_modules/.bin/i18n-fs check --cwd "$fixture"; then
             echo 'expected check to fail on a missing key'
             exit 1
           fi

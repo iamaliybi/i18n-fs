@@ -24,7 +24,7 @@ manifests, `--filter` in five root scripts, `allowBuilds` in
 npm could cover it, the migration was performed on a spike branch and the entire
 suite run against it.
 
-Everything passes on npm: 120 Rust tests, 149 package tests, both example apps
+Everything passes on npm: 120 Rust tests, 164 package tests, both example apps
 built, 44 end-to-end assertions across two Next.js majors, and the documentation
 check.
 
