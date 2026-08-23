@@ -29,6 +29,7 @@ export {
 
 export type {
 	NamespaceState,
+	RichTranslationParams,
 	TagRenderers,
 	TranslateOptions,
 	TranslationParams,

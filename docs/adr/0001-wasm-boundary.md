@@ -41,11 +41,19 @@ Rust owns the work where it is genuinely better, and nothing else.
 One crate, three binaries, because the runtimes differ in what they can load
 *and* in what they should carry:
 
-| build     | wasm-pack target | cargo features       | consumer                    |
-| --------- | ---------------- | -------------------- | --------------------------- |
-| `edge`    | `bundler`        | `--no-default-features` | Next.js middleware (Edge) |
-| `browser` | `web`            | `full`               | Client Components           |
-| `node`    | `nodejs`         | `full`               | Server Components, CLI      |
+| build     | wasm-pack target | cargo features         | consumer                  |
+| --------- | ---------------- | ---------------------- | ------------------------- |
+| `edge`    | `web`            | `routing`              | the Next.js proxy (Edge)  |
+| `browser` | `web`            | `full`                 | Client Components         |
+| `node`    | `web`            | `full,cli,routing`     | Server Components, CLI    |
+
+> Updated after the fact. This ADR originally specified the `bundler` and
+> `nodejs` targets; both resolve their `.wasm` at runtime through a path that
+> bundlers rewrite, which fails at request time rather than at build time. All
+> three use `web` and are handed their bytes —
+> [ADR 0009](0009-middleware-and-navigation.md). Routing became a separate
+> feature later, so the browser binary no longer carries it —
+> [ADR 0001 consequences](#consequences) and the sizes in the README.
 
 The `edge` build is compiled without `serde_json`, message storage, formatting,
 config validation or error rendering. Those are *absent from the binary*, not
@@ -65,6 +73,11 @@ Measured at the time of writing (gzip, `wasm-opt -Oz`):
 | `edge`    | 119.9 KB | 60.4 KB  |
 | `browser` | 183.5 KB | 89.6 KB  |
 | `node`    | 183.5 KB | 89.6 KB  |
+
+> The browser figure stands as the measurement that prompted this ADR. It is no
+> longer current: dropping routing from that build took it to 55.7 KB gzip.
+> Current numbers are generated into the README by `npm run measure` and checked
+> in CI, so they cannot be stale there.
 
 The Edge number was worse than expected, so it was broken down:
 

@@ -15,6 +15,16 @@ import { ErrorCode } from './errors.js';
 /** Values substituted into `{placeholder}` markers. */
 export type TranslationParams = Record<string, string | number>;
 
+/**
+ * Parameters for `t.rich`, which may also be React elements.
+ *
+ * `t` and `t.array` produce strings and can only substitute strings. `t.rich`
+ * builds React output, and substitution happens *after* the message is
+ * tokenised — so an element passed here stays an element instead of being
+ * stringified to `[object Object]` on the way in.
+ */
+export type RichTranslationParams = Record<string, ReactNode | string | number>;
+
 /** Renderers for `<tag>` regions in a rich message. */
 export type TagRenderers = Record<string, (chunk: ReactNode) => ReactNode>;
 
@@ -42,7 +52,7 @@ export interface Translator {
 	rich(
 		key: string,
 		tags?: TagRenderers,
-		params?: TranslationParams,
+		params?: RichTranslationParams,
 		options?: TranslateOptions,
 	): ReactNode;
 	/** A list of messages. */

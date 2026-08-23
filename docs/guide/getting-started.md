@@ -4,6 +4,12 @@ A complete Next.js App Router setup, from nothing to a translated page.
 
 Requires **Next.js 14.2+** and **Node 22.18+**.
 
+The React version that matters is the one Next.js vendors for the App Router,
+not the one in your `package.json`: Next.js 15 and 16 use a React 19 build,
+Next.js 14.2 uses a React 18 build, and both provide the `use()` that the client
+hook needs. So `react@18` alongside Next.js 15 is not really React 18 in your
+Client Components.
+
 ```bash
 npm install i18n-fs
 ```

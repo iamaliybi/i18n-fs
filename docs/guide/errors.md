@@ -71,8 +71,13 @@ New codes may be added. Existing ones are never renumbered.
 ## Diagnostics
 
 ```
-[i18n-fs] KEY_NOT_FOUND (201): key "cta.label" does not exist in "home/hero" for locale "fa". Falling back to the developer-supplied string, or the key itself. i18n-fs never falls back to another locale.
+[i18n-fs] KEY_NOT_FOUND (201): key "cta.label" does not exist in "home/hero" for locale "fa".
 ```
+
+The line is the code's name, its number, and what happened. What the reader is
+shown instead — the developer's string, or the key — is the same for every
+failure, so it is documented once here rather than repeated on every line of the
+console.
 
 The **name** is printed beside the number, because a console is read by people
 and `201` alone would send you to a table. `INVALID_JSON` carries the parser's
@@ -109,9 +114,14 @@ rather than leaving you to guess:
 
 | where | how long the failure lasts | what clears it |
 | --- | --- | --- |
-| server, development | until the file changes | fix the file |
+| server, development | not remembered at all — retried on the next render | fix the file |
 | server, production | until the process restarts | restart |
 | client | until the page is reloaded | reload |
+
+Development is the exception on purpose: a *successful* load is cached and
+re-read when the file's timestamp changes, but a *failed* one is not cached at
+all, so correcting a malformed file shows up immediately even if its timestamp
+somehow did not move.
 
 Nothing retries automatically on purpose. A component that re-renders is not
 evidence that a missing file has appeared, and re-fetching on every render would

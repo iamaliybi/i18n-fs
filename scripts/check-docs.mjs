@@ -152,6 +152,9 @@ const ADVICE = [
 	['src/client/namespaces.ts', 'if a reload still shows it, restart the dev server'],
 	['src/server/messages.ts', 'the file is re-read when it changes; restart the dev server if this persists'],
 	['src/server/messages.ts', 'the server keeps this result until it restarts'],
+	// The guide prints a sample console line. It drifted once — it carried two
+	// sentences the reporter has never emitted — because nothing compared it.
+	['src/report.ts', 'does not exist in'],
 ];
 
 // Compared with whitespace collapsed, so prose stays free to wrap: the sentence
