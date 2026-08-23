@@ -69,10 +69,10 @@ for (const path of markdown) {
 // the documentation.
 const EXPECTED = [
 	'ErrorCode', 'errorCodeName', 'isErrorCode', 'isNamespaceError', 'isLookupError',
-	'ERROR_CODE_NAMES', 'VERSION',
+	'ERROR_CODE_NAMES', 'VERSION', 'getI18nConfig',
 	'getTranslation', 'getLocale', 'getResolvedLocale', 'setRequestLocale',
 	'I18nProvider', 'configureI18n', 'getPathname', 'permanentRedirect',
-	'useTranslation', 'useLocale', 'useI18nContext', 'usePrefetch', 'prefetchNamespace',
+	'useTranslation', 'useLocale', 'useI18nContext', 'usePrefetch',
 	'Link', 'useRouter', 'usePathname', 'useLocaleSwitcher',
 	'createI18nProxy', 'createI18nMiddleware', 'I18nProxyHandler',
 	'LOCALE_HEADER', 'RESOLVED_HEADER', 'RECOMMENDED_MATCHER',

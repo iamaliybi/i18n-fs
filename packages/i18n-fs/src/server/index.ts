@@ -4,29 +4,28 @@
  * Everything here runs on the server: it reads request headers and the
  * filesystem, neither of which exists in the browser. Importing it from a
  * Client Component is a build error, which is the intent.
+ *
+ * What is exported is what an application uses, plus the four lower-level
+ * loaders the documentation offers for tooling. The rest — cache resets, path
+ * builders, the locale resolver — is internal: every exported name is a promise
+ * to keep, and nothing outside this package ever called them.
  */
 
-export { configureI18n, getI18nConfig, resetI18nConfig } from './config.js';
+export { configureI18n, getI18nConfig } from './config.js';
 
 export {
 	getLocale,
 	getResolvedLocale,
-	getRequestLocale,
 	setRequestLocale,
-	resolveLocaleFromRequest,
 	LOCALE_HEADER,
-	type RequestSignals,
 	type ResolvedLocale,
-	type ServerLocaleSource,
 } from './locale.js';
 
+// Lower-level loading, documented for tooling that wants the messages without
+// the translator around them.
 export {
-	clearMessageCache,
-	isSafeNamespace,
 	loadNamespace,
 	loadNamespaces,
-	namespacePath,
-	readLocaleManifest,
 	readManifest,
 	readRawNamespaces,
 	type LocaleManifest,
@@ -34,7 +33,7 @@ export {
 	type SerialisableBundle,
 } from './messages.js';
 
-export { getTranslation, resetReporter } from './translation.js';
+export { getTranslation } from './translation.js';
 
 export {
 	ERROR_CODE_NAMES,

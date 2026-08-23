@@ -97,22 +97,20 @@ if (built) {
 	const wasm = files.find((f) => f.endsWith('.wasm'));
 
 	if (wasm) {
-		// The glue is whichever JavaScript chunks name the binary. They are what a
-		// visitor downloads alongside it, so leaving them out would understate the
-		// cost.
-		const glue = files.filter(
-			(f) => f.endsWith('.js') && readFileSync(f, 'utf8').includes('i18n_fs_wasm_bg'),
-		);
-
-		const total = [wasm, ...glue].reduce(
-			(sum, file) => {
-				const s = sizes(file);
-				return { raw: sum.raw + s.raw, gzip: sum.gzip + s.gzip, brotli: sum.brotli + s.brotli };
-			},
-			{ raw: 0, gzip: 0, brotli: 0 },
-		);
-
-		shipped = { wasm: sizes(wasm), glueCount: glue.length, total };
+		// Only the binary, deliberately.
+		//
+		// The first version of this added every JavaScript chunk that mentioned
+		// the binary, on the grounds that a visitor downloads those too. But a
+		// bundler puts the loader in a chunk beside application code, so that
+		// attributed the example's own pages to this package — and the figure
+		// moved when the example changed, which is how the mistake surfaced. A
+		// number that grows because somebody edited a demo is not measuring the
+		// package.
+		//
+		// The binary is exactly attributable and dominates the cost; the loader
+		// that instantiates it is a couple of kilobytes folded into a chunk that
+		// exists anyway.
+		shipped = { wasm: sizes(wasm) };
 	}
 }
 
@@ -135,7 +133,7 @@ const browser = binaries.find((b) => b.name === 'browser');
 
 if (shipped) {
 	lines.push(
-		`| **Client Components** — WebAssembly + loader | only when a Client Component calls \`useTranslation\` | **${kb(shipped.total.gzip)}** | **${kb(shipped.total.brotli)}** |`,
+		`| **Client Components** — the WebAssembly binary | only when a Client Component calls \`useTranslation\` | **${kb(shipped.wasm.gzip)}** | **${kb(shipped.wasm.brotli)}** |`,
 	);
 } else {
 	lines.push(
@@ -162,9 +160,9 @@ for (const b of binaries) {
 if (shipped) {
 	lines.push(
 		'',
-		`Measured from the built \`examples/next-15-middleware\`, which uses client translations: ` +
-			`the binary is ${kb(shipped.wasm.gzip)} gzip and ${shipped.glueCount} JavaScript ` +
-			`${shipped.glueCount === 1 ? 'chunk names' : 'chunks name'} it.`,
+		`Taken from the built \`examples/next-15-middleware\`, which uses client ` +
+			`translations. The JavaScript that instantiates the binary is a couple of ` +
+			`kilobytes and is folded into a chunk the page loads anyway.`,
 	);
 }
 
@@ -244,5 +242,5 @@ writeFileSync(readme, before + table + after);
 
 console.log(`Measured i18n-fs ${VERSION} on ${stamp}:`);
 for (const b of binaries) console.log(`  ${b.name.padEnd(8)} ${kb(b.gzip).padStart(9)} gzip`);
-if (shipped) console.log(`  a client page downloads ${kb(shipped.total.gzip)} gzip in total`);
+if (shipped) console.log(`  a client page downloads ${kb(shipped.wasm.gzip)} gzip of WebAssembly`);
 else console.log('  (run `npm run example` first to measure what an app ships)');

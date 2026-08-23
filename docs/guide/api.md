@@ -111,6 +111,46 @@ and the HTML does not grow. Use it for a client-only subtree or a panel that
 opens shortly after the page settles. Anything already in `namespaces` is
 skipped.
 
+### `redirect(href, locale?)` · `permanentRedirect(href, locale?)`
+
+`next/navigation`'s redirects, taking locale-free paths. Like the originals,
+they never return.
+
+### `getPathname(href, locale?): Promise<string>`
+
+The public path for a locale-free href.
+
+### `configureI18n(config)` · `getI18nConfig()`
+
+Register the configuration explicitly. Rarely needed — the server imports
+`.i18n-fs/config.mjs` by itself. The escape hatch for deployment layouts where
+that does not resolve, and for tests.
+
+### `loadNamespace` · `loadNamespaces` · `readRawNamespaces` · `readManifest`
+
+Lower-level loading, exported for tooling that wants the messages without a
+translator around them. Everything else behind `getTranslation` — cache resets,
+path builders, the locale resolver — is internal and not exported.
+
+---
+
+## `i18n-fs/client`
+
+Translation and locale state. Navigation lives in
+[`i18n-fs/navigation`](#i18n-fsnavigation) — it used to be re-exported here as
+well, which left two import paths for one thing and no answer to which was
+right.
+
+### `useTranslation(namespace, scope?): Translator`
+
+The same translator as `getTranslation`, synchronously. Suspends while fetching
+a namespace the server did not send — which replaces the whole subtree under the
+nearest `<Suspense>` boundary, so put one close to the component that fetches.
+Named in `<I18nProvider namespaces>`, it does not suspend at all.
+
+The result of a fetch, including a failed one, is kept until the page is
+reloaded.
+
 ### `usePrefetch(): (...namespaces: string[]) => void`
 
 Starts loading namespaces in the background, from an event handler. Never
@@ -129,39 +169,6 @@ touch user has no hover at all.
 A prefetch that fails is forgotten rather than cached, so a bad moment while
 guessing cannot decide the answer for the read that actually needs it. Anything
 already loaded, in flight, or sent by the server is skipped.
-
-### `redirect(href, locale?)` · `permanentRedirect(href, locale?)`
-
-`next/navigation`'s redirects, taking locale-free paths. Like the originals,
-they never return.
-
-### `getPathname(href, locale?): Promise<string>`
-
-The public path for a locale-free href.
-
-### `configureI18n(config)`
-
-Register the configuration explicitly. Rarely needed — the server imports
-`.i18n-fs/config.mjs` by itself. The escape hatch for deployment layouts where
-that does not resolve, and for tests.
-
-### `loadNamespace` · `loadNamespaces` · `readRawNamespaces` · `readManifest`
-
-Lower-level loading, exported for tooling.
-
----
-
-## `i18n-fs/client`
-
-### `useTranslation(namespace, scope?): Translator`
-
-The same translator as `getTranslation`, synchronously. Suspends while fetching
-a namespace the server did not send — which replaces the whole subtree under the
-nearest `<Suspense>` boundary, so put one close to the component that fetches.
-Named in `<I18nProvider namespaces>`, it does not suspend at all.
-
-The result of a fetch, including a failed one, is kept until the page is
-reloaded.
 
 ### `useLocale(): string`
 

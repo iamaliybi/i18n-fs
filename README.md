@@ -70,7 +70,7 @@ were actually built — never typed by hand — and refreshed before every relea
 
 | what | when it is downloaded | gzip | brotli |
 | --- | --- | --- | --- |
-| **Client Components** — WebAssembly + loader | only when a Client Component calls `useTranslation` | **62.6 KB** | **53.8 KB** |
+| **Client Components** — the WebAssembly binary | only when a Client Component calls `useTranslation` | **55.7 KB** | **47.8 KB** |
 | **Server Components only** | never — nothing is sent to the browser | **0 KB** | **0 KB** |
 | **The proxy** | never — it runs on the server | **0 KB** | **0 KB** |
 
@@ -82,7 +82,7 @@ Sizes of every binary, including the ones a visitor never receives:
 | `browser` | Client Components | downloaded, and only when one is used | 122.5 KB | 55.7 KB | 47.8 KB |
 | `node` | Server Components and the CLI | read from disk — never downloaded | 194.4 KB | 93.6 KB | 79.8 KB |
 
-Measured from the built `examples/next-15-middleware`, which uses client translations: the binary is 55.7 KB gzip and 2 JavaScript chunks name it.
+Taken from the built `examples/next-15-middleware`, which uses client translations. The JavaScript that instantiates the binary is a couple of kilobytes and is folded into a chunk the page loads anyway.
 
 <!-- measured:end -->
 

@@ -20,7 +20,13 @@ import {
 } from 'next/navigation';
 import { useCallback, useMemo, type ComponentProps } from 'react';
 import { localePath, stripLocale } from '../paths.js';
-import { useI18nContext } from './context.js';
+// Through the package path, not `./context.js`. This module is bundled into the
+// `i18n-fs/navigation` entry, and a relative import would give that entry its
+// own copy of the React context — a `<Link>` would then read a context the
+// provider never populated, which surfaces as "No I18nProvider found" on a page
+// that plainly has one. There is exactly one context module, and it lives in
+// the client entry.
+import { useI18nContext } from 'i18n-fs/client';
 
 /** Turn a locale-free href into the public path for a locale. */
 function useLocalise(): (href: string, locale?: string) => string {
