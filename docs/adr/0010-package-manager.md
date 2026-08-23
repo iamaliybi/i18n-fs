@@ -26,19 +26,37 @@ suite run against it.
 
 Everything passes on npm: 120 Rust tests, 149 package tests, both example apps
 built, 44 end-to-end assertions across two Next.js majors, and the documentation
-check. Two things came out better, and one needed a real fix.
+check.
 
-### The two-install bootstrap is a pnpm artifact, and is gone
+Not on the first attempt, though. The migration surfaced two defects that had
+been in the repository all along, each hidden by something about the old setup —
+which is most of what the exercise was worth.
 
-pnpm creates a package's bin shim by looking at the file `bin` points at. During
-the first install `dist/cli/main.js` does not exist, so no shim is written, and
-a second install alone does not fix it — pnpm sees an up-to-date tree and does
-nothing. `scripts/relink.mjs` existed to clear the tree so a second install
-would take effect, and `bootstrap` ran `install` twice around the build.
+### The two-install bootstrap was a workaround for the wrong problem
 
-npm writes the shim from the `bin` field regardless of whether the target exists
-yet. One install is enough. `relink.mjs`, the second install and the CI step
-that ran them are deleted.
+`bin` pointed at `dist/cli/main.js`, which is generated. During a first install
+that file does not exist, so pnpm wrote no shim — and a second install alone did
+not fix it, because pnpm saw an up-to-date tree and did nothing.
+`scripts/relink.mjs` existed to clear the tree so a second install would take
+effect, and `bootstrap` ran `install` twice around the build.
+
+The first version of this migration claimed npm links the bin regardless of
+whether the target exists. That is true **only on Windows**, which is where it
+was tested. npm links a bin by creating the link and then marking the target
+executable; on Linux and macOS that chmod fails with ENOENT when the target is
+missing, and npm skips the link without reporting it. Windows has no chmod step.
+So the local run looked clean and CI failed with `i18n-fs: not found` on both
+examples.
+
+Neither package manager was really at fault. Pointing `bin` at a generated file
+is the defect. `packages/i18n-fs/bin/i18n-fs.mjs` is now a committed launcher
+that hands over to `dist/cli/main.js`, so the `bin` target exists at every
+install, on every platform, under every package manager. One install is enough —
+and it would have been enough under pnpm too.
+
+`relink.mjs`, the second install and the CI step that ran them are deleted.
+`verify-package.mjs` now fails if `bin` ever points back into `dist/`, because
+this is a defect a Windows machine cannot see.
 
 ### Hoisting exposed a latent bug in the end-to-end runner
 

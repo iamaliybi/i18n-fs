@@ -66,6 +66,28 @@ for (const target of Object.values(manifest.imports['#core-bindings'])) {
 	require_(join(pkg, target), 'declared by imports["#core-bindings"]');
 }
 
+// The file `bin` points at must be committed, not generated. A package manager
+// links a bin during install, and npm marks the target executable as it does so
+// — which fails silently on Linux and macOS when the target does not exist yet,
+// leaving the CLI off PATH. That is a CI-only failure on a Windows machine, so
+// it is asserted here rather than trusted.
+for (const target of Object.values(manifest.bin)) {
+	const path = join(pkg, target);
+
+	require_(path, 'declared by bin');
+
+	if (!readFileSync(path, 'utf8').startsWith('#!/usr/bin/env node')) {
+		problems.push(`${target} has no shebang — the CLI would not be executable`);
+	}
+
+	if (target.startsWith('./dist/')) {
+		problems.push(
+			`bin points at ${target}, which is generated — ` +
+				'a first install cannot link it, so the CLI would not be on PATH',
+		);
+	}
+}
+
 requireFirstLine('cli/main.js', '#!/usr/bin/env node', 'the CLI would not be executable');
 requireFirstLine('client/index.js', "'use client'", 'React would treat it as a Server Component');
 requireFirstLine('navigation.js', "'use client'", 'React would treat it as a Server Component');
