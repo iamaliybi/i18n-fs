@@ -1,5 +1,101 @@
 # i18n-fs
 
+## 0.4.0
+
+### Minor Changes
+
+- 8a8cc8f: Prefetching, so a Client Component does not wait for its namespace.
+
+  Until now there were two settings: name a namespace in `<I18nProvider namespaces>` and it is inlined into the HTML for every visitor whether or not it is read, or leave it out and the browser starts fetching only after hydration. This adds the middle.
+
+  `<I18nProvider prefetch={['settings/panel']}>` emits a `<link rel="preload">`. The request goes out with the HTML, in parallel with the JavaScript, and the payload does not grow. Use it for a client-only subtree or a panel that opens shortly after the page settles.
+
+  `usePrefetch()` starts the request on intent instead, which costs nothing for visitors who never open the thing:
+
+  ```tsx
+  const prefetch = usePrefetch();
+  const warm = () => prefetch("settings/panel");
+
+  <button onPointerEnter={warm} onFocus={warm} onClick={open}>
+    Settings
+  </button>;
+  ```
+
+  `onFocus` as well as `onPointerEnter`, because a keyboard user never hovers and a touch user has no hover at all.
+
+  **A failed prefetch is forgotten.** A failed read is remembered, so one 404 does not become a request per render — but a prefetch is a guess, and caching a failed guess would let a moment of bad network decide that a namespace is missing for the rest of the page's life. The component that actually needs it would render fallbacks having never tried.
+
+  Verified in a browser on both example apps: the preload is reused rather than re-downloaded, the panel opens without suspending, and the console is clean. The `crossorigin` attribute is required for that even though the request is same-origin — without it the browser downloads the file twice, which is how the first attempt was caught.
+
+- f5c7a8c: The browser binary is 38% smaller: 55.7 KB gzip, down from 89.9 KB.
+
+  It was carrying locale negotiation, route canonicalisation and config validation — none of which a browser ever executes. `<Link>` and `usePathname` are answered by a TypeScript mirror of the same rules so they can stay synchronous, and every redirect decision is made by the proxy before the page is served. That was 34 KB gzip on every visit, for code that never ran.
+
+  Routing is now a cargo feature, and each of the three binaries names exactly what it needs: the proxy gets routing, the browser gets messages, the server gets both. Every build passes `--no-default-features`, so a feature added later cannot quietly land in the binary a visitor downloads.
+
+  | binary                           | before       | after                             |
+  | -------------------------------- | ------------ | --------------------------------- |
+  | browser (downloaded by visitors) | 89.9 KB gzip | **55.7 KB gzip** (47.8 KB brotli) |
+  | edge (runs on every request)     | 60.4 KB gzip | unchanged                         |
+  | node (read from disk)            | 93.6 KB gzip | unchanged                         |
+
+  Nothing is downloaded at all by a page that translates only in Server Components — the browser binary is fetched lazily, and only when a Client Component calls `useTranslation`.
+
+  `loadMessageCore()` is new and is what a Client Component should reach for. `loadFullCore()` now means both halves, which only the Node binary has, and rejects elsewhere with a message naming the right loader; `loadCore()` rejects in the browser for the same reason. If you only use `useTranslation`, `getTranslation` and the navigation wrappers, nothing changes.
+
+- 22a381d: The public surface now matches the documentation, and navigation has one home.
+
+  Both layer entries exported roughly twice what the guide describes. `i18n-fs/server` offered `clearMessageCache`, `resetI18nConfig`, `resetReporter`, `resolveLocaleFromRequest`, `isSafeNamespace`, `namespacePath`, `readLocaleManifest` and `getRequestLocale`; `i18n-fs/client` offered `loadClientNamespace`, `stateFromPayload`, `seedNamespace`, `hasNamespace`, `clearNamespaceCache`, `namespaceUrl`, `prefetchNamespace` and `resetClientReporter`. They are the machinery behind `getTranslation` and `useTranslation`, not an API — the tests import them from source and nothing outside the package ever called them — but every one was a promise kept under semver. They are internal now.
+
+  The four lower-level loaders the guide documents for tooling — `loadNamespace`, `loadNamespaces`, `readRawNamespaces`, `readManifest` — stay.
+
+  **`<Link>`, `useRouter`, `usePathname` and `useLocaleSwitcher` are now only in `i18n-fs/navigation`.** They were in `i18n-fs/client` as well, which left two import paths for one thing. If you import them from `i18n-fs/client`, change the path to `i18n-fs/navigation`; nothing else changes. `useLocale`, `useTranslation`, `usePrefetch` and `useI18nContext` stay in `i18n-fs/client`.
+
+  The single React context that made the old arrangement necessary is preserved: `i18n-fs/navigation` now carries the implementation and reaches the context through `i18n-fs/client`, so there is still exactly one context module. A second one is what produced "No I18nProvider found" on a page that plainly had one, so it is asserted twice — CI counts `createContext` in the built entry, and a test pins every entry's exports so an accidental export fails as loudly as a missing one.
+
+  `usePrefetch` was documented under `i18n-fs/server`. It is a client hook and is now documented where it lives.
+
+  The README's size table now reports only the WebAssembly binary. It used to add every JavaScript chunk that mentioned it, which attributed the example app's own pages to this package — and the figure moved when the example changed, which is how the mistake surfaced.
+
+### Patch Changes
+
+- c7d6933: An audit of the documentation against the code, and the one type that was wrong.
+
+  `t.rich` accepts a React element as a parameter — the runtime has always substituted after tokenising, precisely so an element stays an element — but the public type said `string | number`, so the documented example did not type-check. The test that claimed to cover it passed the string `'Ali'`. `RichTranslationParams` now types it, and the test passes an actual element.
+
+  Corrections where the documentation described behaviour the code does not have:
+
+  - **Suspension.** "A namespace in `namespaces` does not suspend at all" was wrong. `useTranslation` reads the WebAssembly core through `use()` before it looks at the namespace, so the _first_ Client Component to translate anything waits for the core regardless. Pre-loading removes the fetch, not the suspension — and a reader following the old text would omit the boundary the first render needs.
+  - **Failed loads in development.** The table said a server-side failure lasts "until the file changes". It is not cached in development at all, so it is retried on the next render.
+  - **The sample console line** in the errors guide carried two sentences the reporter has never printed.
+  - **The architecture notes** described `bundler`/`nodejs` wasm-pack targets, a two-loader interface, cargo features from before routing became one, and an entry-point table without `i18n-fs/proxy`.
+  - `CONFIG_DEFAULTS` and `I18nClientProvider` are exported and were documented nowhere.
+  - The module comment shipped in `src/index.ts` still said the React layers would "land in later pull requests".
+
+  The doc checker now also compares the sample console line against the reporter, since that one drifted because nothing was watching it.
+
+  No behaviour changed.
+
+- 70b3745: The README now states what the package costs a visitor, measured rather than claimed.
+
+  Bundle size is a reasonable thing to decide a dependency on, and until now the answer was not written down anywhere. It is now the third section of the README: what a page downloads with Server Components only (nothing), what it downloads when a Client Component calls `useTranslation`, and the size of all three WebAssembly binaries including the two a visitor never receives.
+
+  The numbers are generated by `npm run measure` from the binaries and the example app as they were actually built, and stamped with the date and version they were taken from. Numbers typed into prose rot silently — a reader cannot tell a stale figure from a true one — so CI runs `npm run measure:check` on every pull request and fails when the documented sizes no longer match the built ones. `npm run release` runs the same check before publishing.
+
+  No code changes.
+
+- c7d6933: Prove, and keep proving, that you pay only for what you import.
+
+  Tree-shaking already worked — `sideEffects: false` is declared and bundlers honour it — but nothing in the repository would have noticed if that stopped being true. The only symptom of a regression is a larger download, which no type checker and no runtime test can see.
+
+  Measured by bundling one import at a time: `ErrorCode`, `VERSION` and `defineConfig` cost under a kilobyte; `Link`, `useRouter`, `usePathname`, `useLocaleSwitcher`, `useLocale` and `useI18nContext` cost one to two kilobytes and carry **no WebAssembly at all**; only `useTranslation` and the core loaders pull the binary, because resolving a message needs it.
+
+  Confirmed through a real Next.js build too: an app that navigates and switches locale on the client, but translates only in Server Components, emits no `.wasm`.
+
+  `test/tree-shaking.test.ts` now bundles each import and fails if one starts pulling the core, or if the side-effect declaration disappears. Verified by making `useLocale` depend on the core: the test fails by name.
+
+  The README states the guarantee where a reader deciding on a dependency will see it.
+
 ## 0.3.0
 
 ### Minor Changes
