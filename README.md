@@ -100,6 +100,10 @@ namespace with a content hash, so a page carries the messages it reads and not
 your whole translation tree. Anything listed in `<I18nProvider namespaces>` is
 already in the payload and is not fetched at all.
 
+Expect the last decimal to move: the Rust toolchain is not byte-identical across
+operating systems, so the same commit built on Linux and on Windows differs by a
+few tenths of a kilobyte.
+
 ## Quick look
 
 ```ts

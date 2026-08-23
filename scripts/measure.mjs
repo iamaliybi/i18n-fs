@@ -187,17 +187,51 @@ if (process.argv.includes('--check')) {
 
 	// Every row except the stamp line, which is a date rather than a measurement.
 	const rows = (block) =>
-		block
-			.split(/\r?\n/)
-			.filter((line) => line.startsWith('|') && !line.includes('| --- |'))
-			.join('\n');
+		block.split(/\r?\n/).filter((line) => line.startsWith('|') && !line.includes('| --- |'));
 
-	if (rows(documented) !== rows(table)) {
-		console.error('README.md advertises sizes that the built binaries do not have.\n');
-		console.error('documented:');
-		console.error(rows(documented));
-		console.error('\nmeasured:');
-		console.error(rows(table));
+	/** The row with its numbers removed, so wording is compared exactly. */
+	const shape = (line) => line.replace(/[\d.]+ KB/g, '<size>');
+	const numbers = (line) => [...line.matchAll(/([\d.]+) KB/g)].map(([, n]) => Number(n));
+
+	const was = rows(documented);
+	const now = rows(table);
+	const problems = [];
+
+	if (was.length !== now.length) {
+		problems.push(`the table has ${was.length} rows; the measurement produced ${now.length}`);
+	}
+
+	for (let i = 0; i < Math.min(was.length, now.length); i += 1) {
+		if (shape(was[i]) !== shape(now[i])) {
+			problems.push(`row ${i + 1} no longer describes the same thing:\n    ${was[i]}\n    ${now[i]}`);
+			continue;
+		}
+
+		const documentedSizes = numbers(was[i]);
+		const measuredSizes = numbers(now[i]);
+		const label = was[i].split('|')[1].trim();
+
+		for (let j = 0; j < documentedSizes.length; j += 1) {
+			// The Rust toolchain is not byte-identical across platforms: the same
+			// commit built on Linux and on Windows differs by a few tenths of a
+			// kilobyte, and requiring an exact match would make this fail depending
+			// on who last ran it — which teaches people to ignore it.
+			//
+			// Wide enough for that, and far too narrow to hide anything worth
+			// knowing: the change that prompted this section was 34 KB.
+			const allowed = Math.max(1, documentedSizes[j] * 0.02);
+
+			if (Math.abs(documentedSizes[j] - measuredSizes[j]) > allowed) {
+				problems.push(
+					`${label}: README says ${documentedSizes[j]} KB, the build measures ${measuredSizes[j]} KB`,
+				);
+			}
+		}
+	}
+
+	if (problems.length) {
+		console.error('README.md advertises sizes that the built binaries do not have:\n');
+		for (const problem of problems) console.error(`  - ${problem}`);
 		console.error('\nRun `npm run measure` and commit the result.');
 		process.exit(1);
 	}
