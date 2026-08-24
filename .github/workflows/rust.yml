@@ -40,6 +40,21 @@ jobs:
       - name: Clippy (minimal)
         run: cargo clippy -p i18n-fs-core --no-default-features --all-targets -- -D warnings
 
+      # The three feature sets that are actually built and shipped.
+      #
+      # `--all-features` compiles a combination nobody runs: every helper has a
+      # caller, so nothing looks dead. A release build of the Edge binary warned
+      # that `to_js` was unused and no check had ever seen it, because no check
+      # ever compiled that combination. A warning that only appears while
+      # publishing is one that appears at the worst moment.
+      - name: Clippy (each shipped binary)
+        run: |
+          set -e
+          for features in "routing" "full" "full,cli,routing"; do
+            echo "--- i18n-fs-wasm --features $features"
+            cargo clippy -p i18n-fs-wasm --no-default-features               --features "$features" --all-targets -- -D warnings
+          done
+
       - name: Test (full)
         run: cargo test --workspace --all-features
 
