@@ -35,14 +35,16 @@ function surface(build: string): string[] {
 		.sort();
 }
 
-/** Routing, negotiation and config validation: the proxy and the server. */
-const ROUTING = [
-	'canonicalPath',
-	'decideRoute',
-	'domainForLocale',
-	'internalPath',
-	'negotiateLocale',
-];
+/**
+ * Routing: the proxy and the server.
+ *
+ * Two class names rather than five functions. The configuration used to cross
+ * as a serialised object on every call, which put `serde-wasm-bindgen` in the
+ * Edge binary — a third of it, for a value that never changes while the process
+ * lives. A `Router` is built once from primitives and answers questions
+ * afterwards; `Decision` is its reply.
+ */
+const ROUTING = ['Decision', 'Router'];
 
 /** Message storage and formatting: the browser and the server. */
 const MESSAGES = ['Store', 'interpolate', 'tokenize'];
@@ -69,6 +71,26 @@ describe('the edge binary', () => {
 
 	it.each(MESSAGES)('does not carry %s — the proxy never resolves messages', (name) => {
 		expect(surface('edge')).not.toContain(name);
+	});
+
+	it('carries no serialiser at all', () => {
+		// The point of the primitive boundary, and not visible from the export
+		// list: `serde-wasm-bindgen` brings its own error strings with it, so
+		// their absence is what proves it is gone.
+		//
+		// Read from `bytes.mjs` rather than a `.wasm`: the Edge binary is
+		// embedded as base64 and the file is deleted, because the Edge runtime
+		// has no base URL to resolve a sibling file against (ADR 0009).
+		const module = readFileSync(`${wasm}edge/bytes.mjs`, 'utf8');
+		const encoded = /const BASE64 = '([^']+)'/.exec(module)?.[1];
+
+		if (!encoded) throw new Error('could not find the embedded binary in wasm/edge/bytes.mjs');
+
+		const binary = Buffer.from(encoded, 'base64').toString('latin1');
+
+		for (const marker of ['serde', 'invalid type', 'missing field', 'duplicate field']) {
+			expect(binary, `the edge binary still contains "${marker}"`).not.toContain(marker);
+		}
 	});
 });
 

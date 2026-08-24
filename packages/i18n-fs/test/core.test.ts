@@ -8,7 +8,7 @@
  */
 
 import { describe, expect, it } from 'vitest';
-import { loadFullCore } from '../src/core/index.js';
+import { loadFullCore, loadRouter } from '../src/core/index.js';
 import { ErrorCode } from '../src/errors.js';
 import type { I18nErrorPayload, ResolvedI18nFsConfig } from '../src/index.js';
 import { CONFIG_DEFAULTS } from '../src/config.js';
@@ -25,6 +25,10 @@ const config: ResolvedI18nFsConfig = {
 };
 
 const core = await loadFullCore();
+
+// The same handle the proxy builds: the configuration crosses the WebAssembly
+// boundary once, at startup, rather than being serialised into every call.
+const router = await loadRouter(config);
 
 describe('core loading', () => {
 	it('reports the version of the compiled binary', () => {
@@ -49,56 +53,53 @@ describe('configuration', () => {
 
 describe('locale negotiation', () => {
 	it('picks the best supported locale', () => {
-		expect(core.negotiateLocale(config, 'en-US,en;q=0.9')).toBe('en');
+		expect(router.negotiateLocale('en-US,en;q=0.9')).toBe('en');
 	});
 
 	it('falls back to the default when nothing matches', () => {
-		expect(core.negotiateLocale(config, 'ja')).toBe('fa');
+		expect(router.negotiateLocale('ja')).toBe('fa');
 	});
 
 	it('handles a missing header', () => {
-		expect(core.negotiateLocale(config)).toBe('fa');
+		expect(router.negotiateLocale()).toBe('fa');
 	});
 });
 
 describe('routing', () => {
 	it('rewrites the unprefixed default locale', () => {
-		const decision = core.decideRoute(config, { pathname: '/about' });
-		expect(decision).toEqual({
-			locale: 'fa',
-			action: { type: 'rewrite', path: '/fa/about' },
-			setCookie: true,
-			source: 'default',
-		});
+		const decision = router.decideRoute('/about');
+
+		expect(decision.locale).toBe('fa');
+		expect(decision.action).toBe('rewrite');
+		expect(decision.path).toBe('/fa/about');
+		expect(decision.setCookie).toBe(true);
+		expect(decision.source).toBe('default');
 	});
 
 	it('passes a correctly prefixed URL through', () => {
-		const decision = core.decideRoute(config, {
-			pathname: '/en/about',
-			cookieLocale: 'en',
-		});
-		expect(decision.action).toEqual({ type: 'next' });
+		const decision = router.decideRoute('/en/about', undefined, 'en');
+
+		expect(decision.action).toBe('next');
 		expect(decision.source).toBe('path');
 	});
 
 	it('redirects a redundant default prefix, permanently', () => {
-		const decision = core.decideRoute(config, { pathname: '/fa/about' });
-		expect(decision.action).toEqual({
-			type: 'redirect',
-			path: '/about',
-			permanent: true,
-		});
+		const decision = router.decideRoute('/fa/about');
+
+		expect(decision.action).toBe('redirect');
+		expect(decision.path).toBe('/about');
+		expect(decision.permanent).toBe(true);
 	});
 
 	it('does not touch framework and asset paths', () => {
 		for (const pathname of ['/_next/static/x.js', '/api/users', '/logo.png']) {
-			expect(core.decideRoute(config, { pathname }).action).toEqual({ type: 'next' });
+			expect(router.decideRoute(pathname).action, pathname).toBe('next');
 		}
 	});
 
 	it('canonicalises a path for the navigation wrappers', () => {
-		expect(core.canonicalPath(config, '/fa/about', 'en')).toBe('/en/about');
-		expect(core.internalPath(config, '/about', 'en')).toBe('/en/about');
+		expect(router.canonicalPath('/fa/about', 'en')).toBe('/en/about');
+		expect(router.internalPath('/about', 'en')).toBe('/en/about');
 	});
 });
 

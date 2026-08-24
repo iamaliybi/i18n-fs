@@ -11,7 +11,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterEach, describe, expect, it } from 'vitest';
 import type { ResolvedI18nFsConfig } from '../src/config.js';
-import { loadFullCore } from '../src/core/index.js';
+import { loadFullCore, loadRouter } from '../src/core/index.js';
 import { ErrorCode } from '../src/errors.js';
 import {
 	clearMessageCache,
@@ -57,7 +57,8 @@ async function project(files: Record<string, string>): Promise<string> {
 	return root;
 }
 
-const negotiate = (header: string) => core.negotiateLocale(CONFIG, header);
+const router = await loadRouter(CONFIG);
+const negotiate = (header: string) => router.negotiateLocale(header);
 
 describe('locale resolution', () => {
 	it('prefers an explicit override over everything else', () => {

@@ -36,7 +36,7 @@
 
 import { NextResponse, type NextRequest } from 'next/server';
 import type { ResolvedI18nFsConfig } from './config.js';
-import { loadCore } from './core/index.js';
+import { loadRouter } from './core/index.js';
 import type { Decision } from './core/types.js';
 
 /** Header carrying the resolved locale to the server layer. */
@@ -125,37 +125,40 @@ export function createI18nProxy(
 		const early = await options.before?.(request);
 		if (early) return early;
 
-		const core = await loadCore();
+		// Built once per configuration, not per request: the config crosses the
+		// WebAssembly boundary at startup instead of being serialised into every
+		// call, which is what kept the serialiser out of the Edge binary.
+		const router = await loadRouter(config);
 
-		const decision = core.decideRoute(config, {
-			pathname: request.nextUrl.pathname,
-			host: request.headers.get('host'),
-			cookieLocale: request.cookies.get(config.cookie.name)?.value ?? null,
-			acceptLanguage: request.headers.get('accept-language'),
-			alreadyResolved: request.headers.has(RESOLVED_HEADER),
-		});
+		const decision = router.decideRoute(
+			request.nextUrl.pathname,
+			request.headers.get('host') ?? undefined,
+			request.cookies.get(config.cookie.name)?.value,
+			request.headers.get('accept-language') ?? undefined,
+			request.headers.has(RESOLVED_HEADER),
+		);
 
 		const headers = forwardedHeaders(request, decision.locale);
 		let response: NextResponse;
 
-		switch (decision.action.type) {
+		switch (decision.action) {
 			case 'redirect': {
 				const url = request.nextUrl.clone();
-				url.pathname = decision.action.path;
+				url.pathname = decision.path;
 				// Same origin, always: moving a visitor between locale domains is a
-				// deliberate action, not something the middleware infers.
-				response = NextResponse.redirect(url, decision.action.permanent ? 308 : 307);
+				// deliberate action, not something the proxy infers.
+				response = NextResponse.redirect(url, decision.permanent ? 308 : 307);
 				break;
 			}
 
 			case 'rewrite': {
 				const url = request.nextUrl.clone();
-				url.pathname = decision.action.path;
+				url.pathname = decision.path;
 				response = NextResponse.rewrite(url, { request: { headers } });
 				break;
 			}
 
-			case 'next':
+			default:
 				response = NextResponse.next({ request: { headers } });
 				break;
 		}

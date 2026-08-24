@@ -13,7 +13,8 @@
 
 import { CAPABILITY, loadBindings } from '#core-bindings';
 import { VERSION } from '../version.js';
-import type { CliCore, EdgeCore, FullCore, MessageCore } from './types.js';
+import type { ResolvedI18nFsConfig } from '../config.js';
+import type { CliCore, EdgeCore, FullCore, MessageCore, Router } from './types.js';
 
 let pending: Promise<MessageCore | EdgeCore> | undefined;
 let pendingRouting: Promise<EdgeCore> | undefined;
@@ -141,6 +142,50 @@ export async function loadCliCore(): Promise<CliCore> {
 	}
 
 	return core as CliCore;
+}
+
+/**
+ * The router for a configuration, built once and reused.
+ *
+ * Keyed by the config object itself, so a process that resolves its config once
+ * — which is every process — constructs one router and asks it questions. That
+ * is the whole point of the primitive boundary: the configuration crosses at
+ * startup instead of on every request.
+ */
+const routers = new WeakMap<ResolvedI18nFsConfig, Promise<Router>>();
+
+export function loadRouter(config: ResolvedI18nFsConfig): Promise<Router> {
+	let pending = routers.get(config);
+
+	if (!pending) {
+		pending = loadCore().then((core) => {
+			const router = new core.Router(
+				[...config.locales],
+				config.defaultLocale,
+				config.strategy,
+				config.prefix,
+				config.messagesDir,
+				config.cookie.name,
+				config.cookie.maxAge,
+				config.cookie.sameSite,
+				config.cookie.path,
+				config.cookie.secure,
+				config.debug,
+			);
+
+			// Domain rules are added one at a time: a list of structures is
+			// exactly what would need a serialiser.
+			for (const rule of config.domains) {
+				router.addDomain(rule.domain, rule.locale, [...(rule.locales ?? [])]);
+			}
+
+			return router;
+		});
+
+		routers.set(config, pending);
+	}
+
+	return pending;
 }
 
 /** Whether this runtime's core can load and format messages. */

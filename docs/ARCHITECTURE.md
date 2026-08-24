@@ -71,7 +71,7 @@ asking for:
 
 | loader | surface | available in |
 | --- | --- | --- |
-| `loadCore()` | routing and negotiation | proxy, server |
+| `loadCore()` | the `Router` class | proxy, server |
 | `loadMessageCore()` | messages and formatting | browser, server |
 | `loadFullCore()` | both | server only |
 | `loadCliCore()` | both, plus namespace introspection | the CLI |
@@ -79,6 +79,11 @@ asking for:
 Each rejects with a message naming the alternative rather than failing as
 `undefined is not a function` — `loadCore()` in a Client Component points at
 `i18n-fs/navigation`, which answers the same rules without any WebAssembly.
+
+Routing crosses the boundary as a **`Router` built once from primitives**, not
+as a configuration serialised into every call. `loadRouter(config)` memoises one
+per config object. That is what keeps `serde` out of the Edge binary, which is
+the one that runs on every request — see [ADR 0001](adr/0001-wasm-boundary.md).
 
 ## The CLI
 
