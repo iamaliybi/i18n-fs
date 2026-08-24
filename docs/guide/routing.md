@@ -46,6 +46,12 @@ A domain may opt into serving extra locales by prefix:
 `example.com/de-AT/about` then works, and `example.ir/de-AT/about` does not —
 that host never opted in, so the prefix is normalised away.
 
+**Extra locales need a prefix to be reachable**, so pairing them with
+`prefix: 'never'` asks for something impossible: the locale is declared and can
+never be selected. `i18n-fs check` reports it rather than letting you find out
+from a page in the wrong language. Either use `as-needed`, or give the locale a
+domain of its own.
+
 Under this strategy, the locale that goes **unprefixed** under `as-needed` is the
 one the host serves, not the global default. On the English host `/about` is
 English even if `defaultLocale` is Persian. Getting this wrong is what caused a

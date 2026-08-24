@@ -6,7 +6,7 @@
 #![cfg(feature = "diagnostics")]
 #![allow(clippy::unwrap_used, clippy::panic)]
 
-use i18n_fs_core::config::{CookieConfig, DomainRule, I18nConfig, Strategy};
+use i18n_fs_core::config::{CookieConfig, DomainRule, I18nConfig, PrefixMode, Strategy};
 
 fn valid() -> I18nConfig {
 	I18nConfig {
@@ -212,4 +212,84 @@ fn optional_fields_may_be_omitted_from_the_snapshot() {
 	assert_eq!(parsed.strategy, Strategy::Path);
 	assert_eq!(parsed.messages_dir, "locales");
 	assert!(parsed.validate().is_empty());
+}
+
+// A domain's extra `locales` are reachable only through a URL prefix, and
+// `never` removes prefixes. The router already resolves this deterministically
+// — the loop tests cover that — so nothing breaks at runtime and the locale is
+// simply unreachable. Catching it at build time is the point.
+#[test]
+fn rejects_extra_domain_locales_under_prefix_never() {
+	let config = I18nConfig {
+		locales: vec!["fa".to_owned(), "en".to_owned(), "de-AT".to_owned()],
+		default_locale: "fa".to_owned(),
+		strategy: Strategy::Domain,
+		prefix: PrefixMode::Never,
+		domains: vec![DomainRule {
+			domain: "example.com".to_owned(),
+			locale: "en".to_owned(),
+			locales: vec!["de-AT".to_owned()],
+		}],
+		..I18nConfig::default()
+	};
+
+	let issues = config.validate();
+	let Some(issue) = issues.iter().find(|i| i.field == "domains[0].locales") else {
+		panic!("the unreachable locale should be reported; got {issues:?}");
+	};
+
+	// The message has to say what to do, not only that something is wrong.
+	assert!(issue.message.contains("as-needed"), "{}", issue.message);
+	assert!(issue.message.contains("example.com"), "{}", issue.message);
+}
+
+#[test]
+fn accepts_extra_domain_locales_when_prefixes_survive() {
+	// The same configuration is fine as soon as a prefix can express the locale.
+	for prefix in [PrefixMode::AsNeeded, PrefixMode::Always] {
+		let config = I18nConfig {
+			locales: vec!["fa".to_owned(), "en".to_owned(), "de-AT".to_owned()],
+			default_locale: "fa".to_owned(),
+			strategy: Strategy::Domain,
+			prefix,
+			domains: vec![DomainRule {
+				domain: "example.com".to_owned(),
+				locale: "en".to_owned(),
+				locales: vec!["de-AT".to_owned()],
+			}],
+			..I18nConfig::default()
+		};
+
+		assert!(
+			!fields(&config).iter().any(|f| f == "domains[0].locales"),
+			"{prefix:?} should not be reported"
+		);
+	}
+}
+
+#[test]
+fn leaves_a_domain_without_extra_locales_alone_under_never() {
+	// `domain` with `never` is the ordinary separate-sites-per-language setup
+	// and must stay valid.
+	let config = I18nConfig {
+		locales: vec!["fa".to_owned(), "en".to_owned()],
+		default_locale: "fa".to_owned(),
+		strategy: Strategy::Domain,
+		prefix: PrefixMode::Never,
+		domains: vec![
+			DomainRule {
+				domain: "example.ir".to_owned(),
+				locale: "fa".to_owned(),
+				locales: vec![],
+			},
+			DomainRule {
+				domain: "example.com".to_owned(),
+				locale: "en".to_owned(),
+				locales: vec![],
+			},
+		],
+		..I18nConfig::default()
+	};
+
+	assert!(config.validate().is_empty(), "{:?}", config.validate());
 }
