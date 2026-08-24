@@ -27,7 +27,9 @@
 		"changeset": "changeset",
 		"changeset:version": "changeset version && npm install --package-lock-only",
 		"changeset:publish": "changeset publish",
-		"release": "npm run wasm:build && npm run wasm:sync && npm run build && npm run measure:check && changeset publish"
+		"release": "npm run wasm:build && npm run wasm:sync && npm run build && npm run measure:check && changeset publish && git push --follow-tags",
+		"releases:check": "node scripts/github-releases.mjs",
+		"releases:create": "node scripts/github-releases.mjs --create"
 	},
 	"devDependencies": {
 		"@changesets/cli": "^2.29.7"

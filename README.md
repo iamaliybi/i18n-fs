@@ -270,6 +270,26 @@ documented sizes cannot drift from the binaries that were built — a change tha
 grows the download fails the build while the README still advertises the old
 figure. `npm run release` runs the same check before publishing.
 
+**Publishing**, once the version pull request is merged:
+
+```bash
+npm run release
+```
+
+That builds the three binaries, checks the documented sizes against them,
+publishes to npm, and **pushes the tag** — `changeset publish` writes the tag
+locally and nothing else does. Five versions once reached npm with no tag on the
+remote, so there was no way to tell which commit `0.6.1` was; a test now fails if
+the newest changelog entry has no tag behind it.
+
+GitHub releases are separate, because the action that would create them only
+runs when publishing happens in CI:
+
+```bash
+npm run releases:check     # published versions with no release
+npm run releases:create    # create them, with the changelog as the notes
+```
+
 Architecture decisions live in [`docs/adr/`](docs/adr/). If you are changing how
 something fundamental works, the ADR is part of the change.
 
