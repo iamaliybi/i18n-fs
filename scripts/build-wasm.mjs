@@ -12,7 +12,7 @@
 // so this has to happen at compile time.
 
 import { execFileSync } from 'node:child_process';
-import { mkdirSync, readdirSync, rmSync, statSync } from 'node:fs';
+import { copyFileSync, mkdirSync, readdirSync, rmSync, statSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { gzipSync } from 'node:zlib';
@@ -82,6 +82,12 @@ const BUILDS = [
 		budgetKb: 100,
 	},
 ];
+
+// wasm-pack looks for a licence beside the crate it is packaging and warns on
+// every build when there is not one. Copied rather than committed: a second copy
+// in the repository is a second thing to keep in step with the first, and this
+// one cannot drift because it is written from the original every time.
+copyFileSync(join(root, 'LICENSE'), join(crate, 'LICENSE'));
 
 function build({ name, target, features }) {
 	const outDir = join('pkg', name);

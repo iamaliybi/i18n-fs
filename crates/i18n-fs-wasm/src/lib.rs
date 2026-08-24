@@ -18,7 +18,7 @@
 //! JSX never crosses this boundary. `tokenize` returns a plain node tree and the
 //! React layer builds elements from it.
 
-#[cfg(feature = "diagnostics")]
+#[cfg(all(feature = "diagnostics", feature = "routing"))]
 use i18n_fs_core::config::I18nConfig;
 use wasm_bindgen::prelude::*;
 
@@ -39,19 +39,22 @@ pub fn core_version() -> String {
 		.to_owned()
 }
 
-#[allow(dead_code)]
+/// Present only where something crosses the boundary as serialised data. The
+/// Edge build does neither, and gating rather than allowing dead code is what
+/// makes that visible when it changes.
+#[cfg(any(all(feature = "diagnostics", feature = "routing"), feature = "full"))]
 fn to_js_error(error: impl core::fmt::Display) -> JsValue {
 	JsValue::from_str(&error.to_string())
 }
 
 /// Deserialising a config snapshot is what pulls in most of the serde bridge,
 /// which is why it is gated with the routing surface that needs it.
-#[cfg(feature = "diagnostics")]
-#[allow(dead_code)]
+#[cfg(all(feature = "diagnostics", feature = "routing"))]
 fn parse_config(config: JsValue) -> Result<I18nConfig, JsValue> {
 	serde_wasm_bindgen::from_value(config).map_err(to_js_error)
 }
 
+#[cfg(any(all(feature = "diagnostics", feature = "routing"), feature = "full"))]
 fn to_js<T: serde::Serialize>(value: &T) -> Result<JsValue, JsValue> {
 	serde_wasm_bindgen::to_value(value).map_err(to_js_error)
 }
