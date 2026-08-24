@@ -1,5 +1,29 @@
 # i18n-fs
 
+## 0.6.0
+
+### Minor Changes
+
+- e099c44: The Edge binary is 37% smaller: 38.3 KB gzip, down from 60.4 KB.
+
+  It carried `serde-wasm-bindgen` in order to deserialise the configuration on every request — roughly a third of the binary, for a value that does not change while the process lives. ADR 0001 recorded this as the known cost and the known fix; this is the fix.
+
+  Routing now crosses the WebAssembly boundary as a `Router` built once from primitives — plain strings, numbers and booleans — which then answers questions. `serde` is not compiled into the Edge binary at all. That is asserted rather than assumed: the surface test decodes the embedded bytes and fails if serde's own error strings appear in them.
+
+  This matters more than the browser reduction that preceded it. The browser binary is downloaded once per visitor; this one is instantiated on **every request**.
+
+  The exported WebAssembly surface changed, so `EdgeCore` did too: the five free functions are gone and `Router` replaces them, reached through `loadRouter(config)`. `Decision` is flat now — `action` is `'next' | 'rewrite' | 'redirect'` with `path` and `permanent` beside it, rather than a tagged union, because a union would have to cross as a serialised object. Nothing in the public API of the package changed; `createI18nProxy`, `getTranslation` and the hooks are untouched.
+
+### Patch Changes
+
+- 02160f7: `i18n-fs check` now rejects a locale that can never be selected.
+
+  A domain may opt into serving extra locales — `{ domain: 'example.com', locale: 'en', locales: ['de-AT'] }` — and those are reachable only through a URL prefix, which is what opting in means. Pairing that with `prefix: 'never'` asks for something impossible: the prefix is removed, so `de-AT` is declared and unreachable.
+
+  Nothing broke, which is why this needed catching rather than fixing. The router resolves it deterministically and does not loop — that is covered by the property tests — so the only symptom was a page rendering in the wrong language with nothing to explain why. It is now an `INVALID_CONFIG` at build time, naming the domain and saying what to use instead.
+
+  Recorded as future work in ADR 0004 when the loop-prevention work found it; the ADR is updated.
+
 ## 0.5.0
 
 ### Minor Changes
