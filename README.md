@@ -128,17 +128,23 @@ pulling the core, because the only symptom otherwise is a larger download.
 
 Three things decide how a namespace reaches a Client Component, and they trade
 document size against a round trip. Measured on a page reading three namespaces
-of 13.5 KB each — 41 KB of JSON — served by `next start`:
+of 13.5 KB each — 41 KB of JSON — by requesting the page from `next start` and
+recording what came back:
 
-| | HTML, uncompressed | **over the wire (gzip)** | when the browser has it |
+| | HTML, uncompressed | **over the wire** | when the browser has it |
 | --- | --- | --- | --- |
-| `<I18nProvider namespaces>` | 47.1 KB | **13.0 KB** | before any JavaScript runs |
-| `<I18nProvider prefetch>` | 6.5 KB | **2.2 KB** | in parallel with the JavaScript |
-| neither | 5.6 KB | **2.0 KB** | after hydration, on demand |
+| `<I18nProvider namespaces>` | 47.0 KB | **13.0 KB** | before any JavaScript runs |
+| `<I18nProvider prefetch>` | 6.4 KB | **2.9 KB** | in parallel with the JavaScript |
+| neither | 5.6 KB | **2.7 KB** | after hydration, on demand |
 
-41 KB of JSON costs about **11 KB on the wire**, because HTML compresses. That
-is the number worth reasoning about — the uncompressed figure is what a
-devtools DOM panel shows and not what anyone downloads.
+Both columns are the same response: what the server sent with `Accept-Encoding:
+gzip`, and what it sent without. Next.js serves gzip; a CDN doing brotli takes
+the first row to about 10.4 KB.
+
+Inlining 41 KB of JSON therefore costs about **10 KB more on the wire** than
+sending none of it, because HTML compresses well. That is the number worth
+reasoning about — the uncompressed figure is what a devtools DOM panel shows,
+and not what anyone downloads.
 
 Minifying the JSON is not worth doing: stripping the indentation makes the files
 3% smaller and, after gzip, **0.1 KB** different, since compression already
