@@ -153,6 +153,18 @@ describe('every published version is findable from the repository', () => {
 				.filter(Boolean),
 		);
 
+		// A checkout with no tags at all is `actions/checkout`, which does not
+		// fetch them. There is nothing to compare there, and the failure this
+		// guards against — a publish that tagged locally and never pushed —
+		// happens on the machine that publishes, which has them.
+		//
+		// Skipped rather than made to pass, so the reason is visible: a check
+		// that quietly asserts nothing is worse than one that says it did not run.
+		if (tags.size === 0) {
+			console.warn('  (no tags in this checkout — skipping the release-tag check)');
+			return;
+		}
+
 		// A version can be in the changelog and never published — 0.6.0 was
 		// versioned, then superseded by 0.6.1 before anyone published it. Only
 		// the current one is asserted, because that is the one a finished
