@@ -10,6 +10,7 @@
 import { createElement, Fragment, type ReactNode } from 'react';
 import type { I18nErrorPayload, MessageCore, MessageNode, Store } from './core/types.js';
 import type { Reporter } from './report.js';
+import type { AnyKey, ListKey, ScopeShape, TextKey } from './registry.js';
 import { ErrorCode } from './errors.js';
 
 /** Values substituted into `{placeholder}` markers. */
@@ -44,23 +45,35 @@ export type NamespaceState =
 	| { readonly status: 'ready'; readonly store: Store }
 	| { readonly status: 'failed'; readonly error: I18nErrorPayload };
 
-/** What `useTranslation` and `getTranslation` return. */
-export interface Translator {
+/**
+ * What `useTranslation` and `getTranslation` return.
+ *
+ * Generic over the scope it was built for, so the keys it accepts are the keys
+ * that scope actually has. The parameter defaults to "anything", which is what
+ * a project gets before `i18n-fs build` has written the registry — and what
+ * `Translator` means when written without arguments, so existing annotations
+ * keep working.
+ */
+export interface Translator<Shape extends ScopeShape = ScopeShape> {
 	/** A single message. */
-	(key: string, params?: TranslationParams, options?: TranslateOptions): string;
+	(key: TextKey<Shape>, params?: TranslationParams, options?: TranslateOptions): string;
 	/** A message with `<tag>` regions rendered by the caller. */
 	rich(
-		key: string,
+		key: TextKey<Shape>,
 		tags?: TagRenderers,
 		params?: RichTranslationParams,
 		options?: TranslateOptions,
 	): ReactNode;
 	/** A list of messages. */
-	array(key: string, params?: TranslationParams, options?: TranslateOptions): string[];
+	array(
+		key: ListKey<Shape>,
+		params?: TranslationParams,
+		options?: TranslateOptions,
+	): string[];
 	/** Whether the key resolves to a message or a list. */
-	has(key: string): boolean;
+	has(key: AnyKey<Shape>): boolean;
 	/** The stored value with no interpolation, or `undefined` if absent. */
-	raw(key: string): string | string[] | undefined;
+	raw(key: AnyKey<Shape>): string | string[] | undefined;
 }
 
 /** Everything the translator needs, supplied by whichever layer built it. */

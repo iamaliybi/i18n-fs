@@ -48,6 +48,8 @@ export { I18nProvider, type I18nProviderProps } from './provider.js';
 
 export { getPathname, permanentRedirect, redirect } from './navigation.js';
 
+export { unknownKey } from '../registry.js';
+
 export type {
 	NamespaceState,
 	RichTranslationParams,

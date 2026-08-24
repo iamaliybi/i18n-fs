@@ -77,6 +77,9 @@ describe('i18n-fs/client', () => {
 				'useLocale',
 				'usePrefetch',
 				'useTranslation',
+				// The escape hatch for a key the generated registry cannot know:
+				// one built at runtime, or one deliberately absent.
+				'unknownKey',
 			].sort(),
 		);
 	});
@@ -150,6 +153,7 @@ describe('i18n-fs/server', () => {
 				'readRawNamespaces',
 				'redirect',
 				'setRequestLocale',
+				'unknownKey',
 			].sort(),
 		);
 	});

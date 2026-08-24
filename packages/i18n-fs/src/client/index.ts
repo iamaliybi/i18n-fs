@@ -27,6 +27,8 @@ export {
 	isNamespaceError,
 } from '../errors.js';
 
+export { unknownKey } from '../registry.js';
+
 export type {
 	NamespaceState,
 	RichTranslationParams,

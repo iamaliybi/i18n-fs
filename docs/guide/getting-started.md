@@ -76,10 +76,12 @@ it always runs first:
 }
 ```
 
-And point TypeScript at the generated types:
+And point TypeScript at the generated types. This line is what makes a mistyped
+key a compile error — TypeScript skips directories whose name begins with a dot,
+so `**/*.ts` does not reach `.i18n-fs` and every key stays `string` without it:
 
 ```json
-{ "include": ["**/*.ts", "**/*.tsx", ".i18n-fs/messages.d.ts"] }
+{ "include": ["**/*.ts", "**/*.tsx", ".i18n-fs/**/*.d.ts"] }
 ```
 
 ## 4. Add the proxy

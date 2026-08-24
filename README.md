@@ -34,9 +34,10 @@ for the readers of exactly one language.
 npx i18n-fs check --strict     # exits non-zero; put it in CI
 ```
 
-**Types generated from the files you actually have.** Namespaces, scopes, and
-which keys are text and which are lists — you write no types yourself, and a
-renamed key is a compile error.
+**Types generated from the files you actually have.** `i18n-fs build` writes the
+namespaces, the scopes inside them, and which keys are text and which are lists.
+You write no types yourself, and a mistyped or renamed key is a compile error —
+as is a list key passed to `t`, or a scope that does not exist.
 
 **Pages ship only the messages they use.** Namespaces live under `public/` and
 are fetched per namespace with a content hash for immutable caching. Nothing

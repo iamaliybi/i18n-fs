@@ -17,6 +17,18 @@
  */
 
 export { loadCore, loadMessageCore, loadFullCore, hasMessageSupport } from './core/index.js';
+export { unknownKey } from './registry.js';
+
+export type {
+	AnyKey,
+	ListKey,
+	MessageRegistry,
+	NamespaceName,
+	ScopeName,
+	ScopeShape,
+	ShapeOf,
+	TextKey,
+} from './registry.js';
 
 export { VERSION } from './version.js';
 

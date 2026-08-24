@@ -235,6 +235,51 @@ scopes inside it, and which keys are text and which are lists — generated from
 your **default locale**, which is the source of truth for what exists.
 `i18n-fs check` is what guarantees the other locales match it.
 
+`getTranslation` and `useTranslation` read that file, so the mistakes below are
+caught before the page runs:
+
+```ts
+const t = await getTranslation('home/hero', 'hero');
+
+t('title');          // fine
+t('titel');          // Argument of type '"titel"' is not assignable to '"title"'
+t.array('title');    // 'title' is text, not a list
+t('bullets');        // 'bullets' is a list, not text
+
+await getTranslation('home/heroo');        // no such namespace
+await getTranslation('home/hero', 'heor'); // no such scope
+```
+
+**One line of setup.** TypeScript skips directories whose name begins with a
+dot, so `.i18n-fs` has to be named in your `tsconfig.json` — otherwise every key
+is `string` again and nothing above is caught:
+
+```json
+{
+	"include": ["**/*.ts", "**/*.tsx", ".i18n-fs/**/*.d.ts", ".next/types/**/*.ts"]
+}
+```
+
+Before the first `i18n-fs build`, and in any project that has not added that
+line, every key is accepted. Being wrong about a key is worth an error; being
+unable to compile before the first build is not.
+
+### Keys the registry cannot know
+
+Two honest cases: a key assembled at runtime, and a key you know is absent —
+the second usually while checking that a missing message degrades rather than
+breaks.
+
+```ts
+import { unknownKey } from 'i18n-fs/server';   // or 'i18n-fs/client'
+
+t(unknownKey(`errors.${code}`), {}, { fallback: 'Something went wrong' });
+```
+
+It does nothing at runtime; the key is passed through and a key that turns out
+not to exist degrades exactly as any other missing key does. A function rather
+than `as never` so the intent is visible in a diff and greppable later.
+
 ## Client Components and suspension
 
 A Client Component reading a namespace the server did not send **fetches it and
