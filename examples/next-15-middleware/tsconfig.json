@@ -7,6 +7,15 @@
 		"allowJs": true,
 		"incremental": true
 	},
-	"include": ["**/*.ts", "**/*.tsx", "**/*.mjs", ".next/types/**/*.ts"],
+	"include": [
+		"**/*.ts",
+		"**/*.tsx",
+		"**/*.mjs",
+		// TypeScript skips directories whose name starts with a dot, so the
+		// generated key registry has to be named explicitly. Without this line
+		// every key is `string` again and a typo compiles.
+		".i18n-fs/**/*.d.ts",
+		".next/types/**/*.ts"
+	],
 	"exclude": ["node_modules", ".next"]
 }

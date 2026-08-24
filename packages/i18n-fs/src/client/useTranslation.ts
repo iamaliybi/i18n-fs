@@ -22,6 +22,7 @@ import { use, useMemo } from 'react';
 import { loadMessageCore } from '../core/index.js';
 import { createReporter, type Reporter } from '../report.js';
 import { createTranslator, type Translator } from '../translator.js';
+import type { NamespaceName, ScopeName, ShapeOf } from '../registry.js';
 import { useI18nContext } from './context.js';
 import { loadClientNamespace, hasNamespace, seedNamespace, stateFromPayload } from './namespaces.js';
 
@@ -49,7 +50,10 @@ function getReporter(debug: boolean): Reporter {
  * Suspends while a namespace the server did not send is being fetched, so a
  * `<Suspense>` boundary above the component controls what is shown meanwhile.
  */
-export function useTranslation(namespace: string, scope?: string): Translator {
+export function useTranslation<
+	N extends NamespaceName,
+	S extends ScopeName<N> = ScopeName<N> & '',
+>(namespace: N, scope?: S): Translator<ShapeOf<N, S>> {
 	const { locale, config, messages, manifest } = useI18nContext();
 
 	// Reading the core through `use()` rather than awaiting it keeps the hook
@@ -74,7 +78,7 @@ export function useTranslation(namespace: string, scope?: string): Translator {
 				scope,
 				state,
 				report: getReporter(config.debug),
-			}),
+			}) as Translator<ShapeOf<N, S>>,
 		[core, locale, namespace, scope, state, config.debug],
 	);
 }
