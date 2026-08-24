@@ -40,15 +40,17 @@ const BUILDS = [
 		// the bytes as an argument instead, and `sync-wasm.mjs` embeds them.
 		target: 'web',
 		features: ['routing'],
-		// Measured baseline, not an aspiration. Breakdown at the time of writing:
-		//   wasm-bindgen glue alone .................  6.3 KB gzip
-		//   + serde-wasm-bindgen config bridging .... 32.7 KB gzip
-		//   + locale negotiation and routing ........ 60.4 KB gzip
-		// Roughly half the binary is the serde bridge, not our logic. Replacing the
-		// serialised-config argument with primitive arguments would remove most of
-		// it; see docs/adr/0001-wasm-boundary.md. The budget guards against drift
-		// until that lands.
-		budgetKb: 65,
+		// This is the binary that runs on every request, so it is the one whose
+		// growth is worth arguing about.
+		//
+		// It was 60.4 KB gzip, of which roughly a third was `serde-wasm-bindgen`
+		// deserialising a configuration that never changes while the process
+		// lives. The config now crosses once, as primitives, and the serialiser
+		// is not compiled in at all — the surface test asserts that by looking
+		// for its error strings in the bytes. See ADR 0001.
+		//
+		// Re-baselined at 40 KB from a measured 38.3.
+		budgetKb: 40,
 	},
 	{
 		name: 'browser',

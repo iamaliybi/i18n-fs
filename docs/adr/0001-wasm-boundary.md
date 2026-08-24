@@ -92,24 +92,43 @@ config validation and error rendering behind a `diagnostics` feature only
 recovered 3 KB, because the weight is in `serde`'s derived deserialiser for
 `I18nConfig`, not in our own code.
 
-This is recorded rather than fixed. The fix is to give the Edge build a
-primitive-argument API — passing locales, default locale, strategy and prefix
-mode as plain strings and integers instead of a serialised config object — which
-would let it drop `serde` and `serde-wasm-bindgen` entirely. That is an API
-change worth making deliberately alongside the middleware in PR #5, not
-smuggled into the foundation.
+This was recorded rather than fixed at the time. **It is fixed now.**
 
-Until then `scripts/build-wasm.mjs` enforces a 65 KB gzip budget on the Edge
-build so it cannot drift upward unnoticed. The budget is a measured baseline,
-not a target we met.
+The Edge build takes a primitive-argument API: a `Router` is constructed once
+from plain strings, numbers and booleans, and answers routing questions
+afterwards. The configuration crosses the boundary at startup rather than being
+serialised into every request, which is what it always was — a value that does
+not change while the process lives.
 
-The browser and node builds carry their own budgets for the same reason. The
-browser one was re-baselined from 90 KB to 95 KB in 0.3.0: removing the
-per-lookup allocation cost 0.5 KB gzip and left roughly 100 bytes of headroom,
-which would have made the next unrelated change to `full` code fail CI for the
-wrong reason. Raising a budget is a decision to record, not a step to take when
-a build turns red — and it says nothing about the Edge build, which contains no
-`full` code at all.
+| | gzip |
+| --- | --- |
+| before, with the serialised config | 60.4 KB |
+| after, primitives only | **38.3 KB** |
+
+`serde` and `serde-wasm-bindgen` are not compiled into the Edge binary at all.
+That is asserted rather than assumed: `wasm-surface.test.ts` decodes the
+embedded bytes and fails if `serde`'s own error strings — `invalid type`,
+`missing field`, `duplicate field` — appear anywhere in them.
+
+`validateConfig` still takes a serialised config and still uses serde. It runs
+in the CLI at build time, in the Node binary, which is read from disk and costs
+nobody a download.
+
+`scripts/build-wasm.mjs` enforces a gzip budget per build so none of them can
+drift upward unnoticed. Each is a measured baseline rather than a target that
+was met, and each has been re-baselined once, deliberately:
+
+| build | budget | why it moved |
+| --- | --- | --- |
+| `edge` | 40 KB | was 65; the primitive boundary above took it to 38.3 |
+| `browser` | 60 KB | was 95; dropping routing took it to 55.7 |
+| `node` | 100 KB | unchanged; read from disk, downloaded by nobody |
+
+Raising a budget is a decision to record, not a step to take when a build turns
+red. The browser one was raised once for the opposite reason — removing a
+per-lookup allocation cost 0.5 KB and left about 100 bytes of headroom, which
+would have failed CI on the next unrelated change — and then lowered again when
+routing left that binary.
 
 ## Consequences
 

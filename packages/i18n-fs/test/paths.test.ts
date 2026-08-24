@@ -11,7 +11,7 @@
 
 import { describe, expect, it } from 'vitest';
 import type { PrefixMode, ResolvedI18nFsConfig, RoutingStrategy } from '../src/config.js';
-import { loadFullCore } from '../src/core/index.js';
+import { loadFullCore, loadRouter } from '../src/core/index.js';
 import { addLocale, baseLocale, localePath, stripLocale } from '../src/paths.js';
 
 const core = await loadFullCore();
@@ -54,13 +54,16 @@ const PATHS = [
 ];
 
 describe('the mirror agrees with the core', () => {
-	it('produces the same canonical path for every configuration', () => {
+	it('produces the same canonical path for every configuration', async () => {
 		let checked = 0;
 
 		for (const strategy of STRATEGIES) {
 			for (const prefix of PREFIXES) {
 				for (const defaultLocale of LOCALES) {
 					const cfg = config(strategy, prefix, defaultLocale);
+					// One router per configuration, the same handle the proxy
+					// builds — so the mirror is checked against what actually runs.
+					const router = await loadRouter(cfg);
 
 					for (const host of HOSTS) {
 						const base = baseLocale(cfg, host);
@@ -68,7 +71,7 @@ describe('the mirror agrees with the core', () => {
 						for (const path of PATHS) {
 							for (const locale of LOCALES) {
 								const mine = addLocale(cfg, stripLocale(cfg, path), locale, base);
-								const theirs = core.canonicalPath(cfg, path, locale, host);
+								const theirs = router.canonicalPath(path, locale, host);
 
 								expect(
 									mine,
@@ -88,13 +91,14 @@ describe('the mirror agrees with the core', () => {
 		expect(checked).toBeGreaterThan(3000);
 	});
 
-	it('strips locale prefixes the same way', () => {
+	it('strips locale prefixes the same way', async () => {
 		const cfg = config('path', 'never', 'fa');
+		const router = await loadRouter(cfg);
 
 		for (const path of PATHS) {
 			// `never` means the canonical form is the stripped one, so the core's
 			// canonical path is exactly what `stripLocale` should produce.
-			expect(stripLocale(cfg, path)).toBe(core.canonicalPath(cfg, path, 'fa', undefined));
+			expect(stripLocale(cfg, path)).toBe(router.canonicalPath(path, 'fa', undefined));
 		}
 	});
 });
