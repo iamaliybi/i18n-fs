@@ -223,6 +223,33 @@ impl I18nConfig {
 			));
 		}
 
+		// A domain's extra `locales` are reachable only through a URL prefix —
+		// that is what opting into them means — and `never` removes prefixes.
+		// The router resolves this deterministically rather than bouncing, so
+		// nothing breaks; the locale is simply unreachable, which is worse to
+		// discover from a page that renders in the wrong language than from a
+		// build that stops.
+		if self.strategy == Strategy::Domain && self.prefix == PrefixMode::Never {
+			for (index, rule) in self.domains.iter().enumerate() {
+				if rule.locales.is_empty() {
+					continue;
+				}
+
+				issues.push(ConfigIssue::new(
+					format!("domains[{index}].locales"),
+					format!(
+						concat!(
+							"\"{}\" lists extra locales, which are reachable only through a URL ",
+							"prefix — and prefix \"never\" removes prefixes, so they can never ",
+							"be selected. Use prefix \"as-needed\", or give each locale its own ",
+							"domain."
+						),
+						rule.domain
+					),
+				));
+			}
+		}
+
 		for (index, rule) in self.domains.iter().enumerate() {
 			if rule.domain.trim().is_empty() {
 				issues.push(ConfigIssue::new(

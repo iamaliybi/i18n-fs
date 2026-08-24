@@ -84,6 +84,7 @@ test asserts it holds for arbitrary input.
 - The property tests are not optional. Every one of the three defects above was
   found by them and none by the example-based tests written alongside.
 - Some strategy/prefix combinations are contradictory by nature (`domain` with
-  `never` and per-domain extra locales). They now resolve deterministically
-  rather than bouncing; a future PR should reject them at config-validation time
-  so the developer hears about it at build time instead.
+  `never` and per-domain extra locales). They resolve deterministically rather
+  than bouncing, and `i18n-fs check` now rejects them as well: nothing breaks at
+  runtime, the extra locale is simply unreachable, and that is worse to discover
+  from a page rendering in the wrong language than from a build that stops.
