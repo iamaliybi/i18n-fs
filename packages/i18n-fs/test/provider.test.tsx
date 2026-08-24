@@ -226,11 +226,11 @@ describe('nesting one provider inside another', () => {
 				</I18nClientProvider>,
 			);
 		});
-		await act(async () => {
-			await new Promise((resolve) => setTimeout(resolve, 50));
-		});
-
-		expect(screen.getByTestId('inner').textContent).toBe('sent by the outer provider');
+		// Waited for rather than slept through: the first client translation on a
+		// page suspends while the WebAssembly core instantiates, and how long
+		// that takes is a property of the machine. A fixed delay passed here and
+		// failed on CI.
+		expect((await screen.findByTestId('inner')).textContent).toBe('sent by the outer provider');
 		expect(fetches).toEqual([]);
 
 		vi.unstubAllGlobals();
@@ -263,7 +263,7 @@ describe('nesting one provider inside another', () => {
 			);
 		});
 
-		expect(screen.getByTestId('overridden').textContent).toBe('from the section');
+		expect((await screen.findByTestId('overridden')).textContent).toBe('from the section');
 	});
 
 	it('does not inherit across a locale change', async () => {
@@ -295,11 +295,7 @@ describe('nesting one provider inside another', () => {
 				</I18nClientProvider>,
 			);
 		});
-		await act(async () => {
-			await new Promise((resolve) => setTimeout(resolve, 50));
-		});
-
-		expect(screen.getByTestId('other-locale').textContent).toBe('english, fetched');
+		expect((await screen.findByTestId('other-locale')).textContent).toBe('english, fetched');
 		expect(fetches).toEqual(['/locales/en/common.json']);
 
 		vi.unstubAllGlobals();
@@ -337,11 +333,11 @@ describe('nesting one provider inside another', () => {
 				</I18nClientProvider>,
 			);
 		});
-		await act(async () => {
-			await new Promise((resolve) => setTimeout(resolve, 50));
-		});
-
-		expect(screen.getByTestId('inner').textContent).toBe('sent by the outer provider');
+		// Waited for rather than slept through: the first client translation on a
+		// page suspends while the WebAssembly core instantiates, and how long
+		// that takes is a property of the machine. A fixed delay passed here and
+		// failed on CI.
+		expect((await screen.findByTestId('inner')).textContent).toBe('sent by the outer provider');
 		expect(fetches).toEqual([]);
 
 		vi.unstubAllGlobals();
