@@ -186,6 +186,21 @@ const after = text.slice(text.indexOf(END) + END.length);
 if (process.argv.includes('--check')) {
 	const documented = text.slice(text.indexOf(START), text.indexOf(END) + END.length);
 
+	// The line says which version the figures came from, and that claim can go
+	// stale on its own: comparing table rows alone let the README advertise
+	// "from i18n-fs 0.6.0" through three releases, with correct numbers and a
+	// wrong provenance. The date is left alone — it records when the block was
+	// regenerated, which is a different question from which build it describes.
+	const stamped = /from i18n-fs (\d+\.\d+\.\d+)/.exec(documented)?.[1];
+
+	if (stamped !== VERSION) {
+		console.error(
+			`README.md says the sizes were measured from i18n-fs ${stamped ?? '(no version named)'}, ` +
+				`but this is ${VERSION}.\n\nRun \`npm run measure\` and commit the result.`,
+		);
+		process.exit(1);
+	}
+
 	// Table rows only. The date line is prose and carries no measurement.
 	const rows = (block) =>
 		block.split(/\r?\n/).filter((line) => line.startsWith('|') && !line.includes('| --- |'));

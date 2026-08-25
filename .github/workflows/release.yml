@@ -52,11 +52,17 @@ jobs:
 
       # The published package contains compiled WebAssembly, so the release job
       # has to build it rather than trusting an artefact from another workflow.
+      #
+      # The example app is built too, because versioning re-measures the README
+      # and one of its rows is what an example actually ships. Without it that
+      # row would vanish and the version pull request would rewrite the table
+      # into something smaller than the truth.
       - name: Build everything
         run: |
           npm run wasm:build
           npm run wasm:sync
           npm run build
+          npm run example
 
       - name: Note that publishing is disabled
         if: env.HAS_NPM_TOKEN != 'true'
