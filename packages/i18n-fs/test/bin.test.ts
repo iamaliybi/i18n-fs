@@ -14,7 +14,7 @@
  * cause. These tests fail on the machine instead.
  */
 
-import { execFile, execFileSync } from 'node:child_process';
+import { execFile } from 'node:child_process';
 import { copyFile, mkdtemp, rm } from 'node:fs/promises';
 import { existsSync, readFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
@@ -126,56 +126,6 @@ describe('the lockfile agrees with the manifest', () => {
 		};
 
 		expect(lock.packages['packages/i18n-fs']?.version).toBe(version);
-	});
-});
-
-describe('every published version is findable from the repository', () => {
-	// `changeset publish` writes a git tag locally and nothing pushes it. While
-	// publishing ran in CI that did not matter — `changesets/action` pushed the
-	// tag and opened a GitHub release in the same step — but that step only runs
-	// when an npm credential is present, and publishing here is manual. Five
-	// versions reached npm with no tag on the remote and no release, so there
-	// was no way to tell which commit `0.6.1` was.
-	//
-	// The release script pushes tags now. This is the check that would have said
-	// so: a tag in the changelog with nothing behind it locally means the last
-	// publish did not finish.
-	it('has a local tag for every version in the changelog', () => {
-		const changelog = readFileSync(join(pkg, 'CHANGELOG.md'), 'utf8');
-		const versions = [...changelog.matchAll(/^## (\d+\.\d+\.\d+)$/gm)].map(([, v]) => v);
-
-		expect(versions.length).toBeGreaterThan(0);
-
-		const tags = new Set(
-			execFileSync('git', ['tag', '--list'], { cwd: root })
-				.toString()
-				.split(/\s+/)
-				.filter(Boolean),
-		);
-
-		// A checkout with no tags at all is `actions/checkout`, which does not
-		// fetch them. There is nothing to compare there, and the failure this
-		// guards against — a publish that tagged locally and never pushed —
-		// happens on the machine that publishes, which has them.
-		//
-		// Skipped rather than made to pass, so the reason is visible: a check
-		// that quietly asserts nothing is worse than one that says it did not run.
-		if (tags.size === 0) {
-			console.warn('  (no tags in this checkout — skipping the release-tag check)');
-			return;
-		}
-
-		// A version can be in the changelog and never published — 0.6.0 was
-		// versioned, then superseded by 0.6.1 before anyone published it. Only
-		// the current one is asserted, because that is the one a finished
-		// publish must have tagged.
-		const [current] = versions;
-
-		expect(
-			tags.has(`i18n-fs@${current}`),
-			`the changelog's newest version is ${current}, but there is no i18n-fs@${current} tag — ` +
-				'the last `npm run release` did not complete',
-		).toBe(true);
 	});
 });
 

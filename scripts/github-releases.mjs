@@ -92,10 +92,24 @@ if (!published.length) {
 	throw new Error('npm reported no published versions, which cannot be right');
 }
 
+// From the remote, not the local clone. This is the distinction that matters:
+// every one of those five tags was present locally the whole time, unpushed, so
+// a check of `git tag --list` would have passed throughout.
+const remoteTags = new Set(
+	run('git', ['ls-remote', '--tags', 'origin'])
+		.split('\n')
+		.map((line) => line.split('\t')[1] ?? '')
+		.filter((ref) => ref.startsWith('refs/tags/') && !ref.endsWith('^{}'))
+		.map((ref) => ref.slice('refs/tags/'.length)),
+);
+
 const missing = [];
+const untagged = [];
 
 for (const version of published) {
 	const tag = `i18n-fs@${version}`;
+
+	if (!remoteTags.has(tag)) untagged.push(tag);
 
 	if (releases.has(tag)) continue;
 
@@ -107,9 +121,20 @@ for (const version of published) {
 	missing.push({ tag, version, body: notes.get(version) });
 }
 
+if (untagged.length) {
+	console.error('Published versions with no tag on the remote:\n');
+	for (const tag of untagged) console.error(`  - ${tag}`);
+	console.error(
+		`\nA tag names a commit, so guessing one is not this script's business. ` +
+			`Push the tags the publish already made:\n\n  git push origin ${untagged.join(' ')}\n`,
+	);
+}
+
 if (!missing.length) {
-	console.log(`Every published version has a release (${published.length} versions).`);
-	process.exit(0);
+	if (!untagged.length) {
+		console.log(`Every published version has a tag and a release (${published.length} versions).`);
+	}
+	process.exit(untagged.length ? 1 : 0);
 }
 
 if (!create) {

@@ -279,16 +279,18 @@ npm run release
 That builds the three binaries, checks the documented sizes against them,
 publishes to npm, and **pushes the tag** — `changeset publish` writes the tag
 locally and nothing else does. Five versions once reached npm with no tag on the
-remote, so there was no way to tell which commit `0.6.1` was; a test now fails if
-the newest changelog entry has no tag behind it.
+remote, so there was no way to tell which commit `0.6.1` was.
 
-GitHub releases are separate, because the action that would create them only
-runs when publishing happens in CI:
+Afterwards, confirm every published version can be found from the repository:
 
 ```bash
-npm run releases:check     # published versions with no release
-npm run releases:create    # create them, with the changelog as the notes
+npm run releases:check     # tags and releases, compared against the registry
+npm run releases:create    # create any missing release, with the changelog as its notes
 ```
+
+It asks **the remote**, not the local clone. That is the distinction that let the
+problem last five versions: every tag was present locally the whole time,
+unpushed, so anything looking at `git tag --list` would have seen nothing wrong.
 
 Architecture decisions live in [`docs/adr/`](docs/adr/). If you are changing how
 something fundamental works, the ADR is part of the change.
