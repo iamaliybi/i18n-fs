@@ -96,6 +96,12 @@ Move a file and one string changes. There is no registry to update, no import
 map to keep in sync, and no central module that has to know about every message
 file you own.
 
+By default every locale is expected to hold the same files and the same keys,
+and `i18n-fs check` fails the build when one does not — see
+[the CLI guide](./cli.md#the-default-locale-is-the-reference). If your locales
+are not translations of one another, say so with `compareLocales: false` and the
+trees are free to differ.
+
 ## Shared keys
 
 There is no convention for them, deliberately. If several namespaces need the
