@@ -10,6 +10,7 @@ so you can start at the top and keep going. Every page also links back here.
 | [Getting started](guide/getting-started.md) | nothing to a translated page, in nine steps |
 | [Folder structure](guide/folder-structure.md) | what is required, what is yours, and why `[locale]` is not optional |
 | [Translating](guide/translating.md) | `t`, `t.array`, `t.rich`, `t.has`, `t.raw` |
+| [Plurals and formatting](guide/plurals-and-formatting.md) | `plural`, `selectordinal`, `select`, and the `Intl` formatters |
 | [Routing](guide/routing.md) | strategies, prefixes, navigation, switching language |
 | [The proxy](guide/proxy.md) | setup, the matcher, composing, Next.js 16 |
 | [The CLI](guide/cli.md) | `check`, `build`, CI |

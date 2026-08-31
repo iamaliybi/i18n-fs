@@ -40,6 +40,13 @@ export const ErrorCode = Object.freeze({
 	TypeMismatch: 202,
 	/** A `{placeholder}` had no matching entry in `params`. */
 	ParamMissing: 300,
+	/** A `plural` or `selectordinal` argument was given something that is not a
+	 * number, so `Intl.PluralRules` could not say which arm it needs. The
+	 * message still renders, through `other`. */
+	PluralNotNumeric: 301,
+	/** A `plural` or `select` argument matched none of its arms, and the message
+	 * did not supply an `other`. */
+	NoMatchingArm: 302,
 	/** The configuration is not internally consistent. */
 	InvalidConfig: 400,
 } as const);
@@ -55,6 +62,8 @@ export const ERROR_CODE_NAMES: Readonly<Record<ErrorCode, string>> = Object.free
 	[ErrorCode.KeyNotFound]: 'KEY_NOT_FOUND',
 	[ErrorCode.TypeMismatch]: 'TYPE_MISMATCH',
 	[ErrorCode.ParamMissing]: 'PARAM_MISSING',
+	[ErrorCode.PluralNotNumeric]: 'PLURAL_NOT_NUMERIC',
+	[ErrorCode.NoMatchingArm]: 'NO_MATCHING_ARM',
 	[ErrorCode.InvalidConfig]: 'INVALID_CONFIG',
 });
 

@@ -7,7 +7,9 @@
 #![cfg(feature = "full")]
 #![allow(clippy::unwrap_used, clippy::panic)]
 
-use i18n_fs_core::format::{flatten, interpolate, tokenize, Node};
+use i18n_fs_core::format::{
+	flatten_with, interpolate, interpolate_with, tokenize, Node, PluralArg,
+};
 use proptest::prelude::*;
 use std::collections::BTreeMap;
 
@@ -33,6 +35,53 @@ fn templates() -> impl Strategy<Value = String> {
 		Just("</"),
 		Just("سلام"),
 		Just("{1bad}"),
+		// Plural arguments, whole and in pieces, so the generator produces both
+		// valid ones and every way of truncating one.
+		Just("{count, plural, one {# file} other {# files}}"),
+		Just("{count, plural, =0 {none} other {#}}"),
+		Just("{role, select, admin {A} other {M}}"),
+		Just("{n, selectordinal, one {#st} other {#th}}"),
+		Just("{count, plural, other {{name} has #}}"),
+		Just("{count, plural, =3 {exactly three} other {#}}"),
+		Just("{count, plural, other {{{name}} won}}"),
+		Just("{count, plural, "),
+		Just("other {"),
+		Just("#"),
+		Just("##"),
+	];
+
+	prop::collection::vec(fragment, 0..12).prop_map(|parts| parts.concat())
+}
+
+/// The same fragments with the tag markup removed.
+///
+/// `flatten` drops tag markup by design and `interpolate` leaves it in place,
+/// so comparing the two renderers means comparing them on messages where they
+/// are supposed to agree. Filtering the main generator instead rejects most of
+/// what it produces and the property gives up before it has covered anything.
+fn tagless_templates() -> impl Strategy<Value = String> {
+	let fragment = prop_oneof![
+		Just("plain"),
+		Just(" "),
+		Just("{name}"),
+		Just("{missing}"),
+		Just("{{"),
+		Just("}}"),
+		Just("{"),
+		Just("}"),
+		Just("سلام"),
+		Just("{1bad}"),
+		Just("{count, plural, one {# file} other {# files}}"),
+		Just("{count, plural, =0 {none} other {#}}"),
+		Just("{role, select, admin {A} other {M}}"),
+		Just("{n, selectordinal, one {#st} other {#th}}"),
+		Just("{count, plural, other {{name} has #}}"),
+		Just("{count, plural, =3 {exactly three} other {#}}"),
+		Just("{count, plural, other {{{name}} won}}"),
+		Just("{count, plural, "),
+		Just("other {"),
+		Just("#"),
+		Just("##"),
 	];
 
 	prop::collection::vec(fragment, 0..12).prop_map(|parts| parts.concat())
@@ -41,7 +90,32 @@ fn templates() -> impl Strategy<Value = String> {
 fn params() -> BTreeMap<String, String> {
 	let mut params = BTreeMap::new();
 	params.insert("name".to_owned(), "Ali".to_owned());
+	params.insert("count".to_owned(), "3".to_owned());
+	params.insert("role".to_owned(), "admin".to_owned());
+	params.insert("n".to_owned(), "21".to_owned());
 	params
+}
+
+/// What the host would report about the numeric parameters in [`params`].
+fn plurals() -> BTreeMap<String, PluralArg> {
+	let mut plurals = BTreeMap::new();
+	plurals.insert(
+		"count".to_owned(),
+		PluralArg {
+			cardinal: "other".to_owned(),
+			ordinal: "other".to_owned(),
+			formatted: "3".to_owned(),
+		},
+	);
+	plurals.insert(
+		"n".to_owned(),
+		PluralArg {
+			cardinal: "other".to_owned(),
+			ordinal: "one".to_owned(),
+			formatted: "21".to_owned(),
+		},
+	);
+	plurals
 }
 
 /// Collapse brace escapes the way the tokeniser does, so tests can compare
@@ -70,12 +144,34 @@ fn unescape(template: &str) -> String {
 /// self-closing `<br />` comes back as `<br></br>` — but semantically the same
 /// message, which is what the round-trip property below checks.
 fn reconstruct(nodes: &[Node]) -> String {
+	reconstruct_inner(nodes, true, false)
+}
+
+/// `escapes` is off inside an arm, and `sharp` is on inside a plural arm —
+/// the same two flags the tokeniser carries. Writing them out here is what
+/// makes the round-trip property test the asymmetry rather than assume it.
+fn reconstruct_inner(nodes: &[Node], escapes: bool, sharp: bool) -> String {
 	let mut out = String::new();
 	for node in nodes {
 		match node {
 			// Literal braces have to go back through the escape, or the
 			// reconstruction would read as a placeholder on the next parse.
-			Node::Text { value } => out.push_str(&value.replace('{', "{{").replace('}', "}}")),
+			// Inside an arm there is no escape, and none is needed: the braces
+			// that survived parsing are balanced, so they parse the same way
+			// again.
+			Node::Text { value } => {
+				let value = if escapes {
+					value.replace('{', "{{").replace('}', "}}")
+				} else {
+					value.clone()
+				};
+				out.push_str(&if sharp {
+					value.replace('#', "##")
+				} else {
+					value
+				});
+			}
+			Node::Number => out.push('#'),
 			Node::Param { name } => {
 				out.push('{');
 				out.push_str(name);
@@ -85,13 +181,37 @@ fn reconstruct(nodes: &[Node]) -> String {
 				out.push('<');
 				out.push_str(name);
 				out.push('>');
-				out.push_str(&reconstruct(children));
+				out.push_str(&reconstruct_inner(children, escapes, sharp));
 				out.push_str("</");
 				out.push_str(name);
 				out.push('>');
 			}
+			Node::Plural {
+				name,
+				ordinal,
+				arms,
+			} => {
+				let keyword = if *ordinal { "selectordinal" } else { "plural" };
+				out.push_str(&write_arms(name, keyword, arms, true));
+			}
+			Node::Select { name, arms } => {
+				out.push_str(&write_arms(name, "select", arms, false));
+			}
 		}
 	}
+	out
+}
+
+fn write_arms(name: &str, keyword: &str, arms: &[i18n_fs_core::Arm], sharp: bool) -> String {
+	let mut out = format!("{{{name}, {keyword}, ");
+	for arm in arms {
+		out.push_str(&arm.key);
+		out.push(' ');
+		out.push('{');
+		out.push_str(&reconstruct_inner(&arm.children, false, sharp));
+		out.push('}');
+	}
+	out.push('}');
 	out
 }
 
@@ -101,7 +221,12 @@ fn text_nodes(nodes: &[Node], out: &mut Vec<String>) {
 		match node {
 			Node::Text { value } => out.push(value.clone()),
 			Node::Tag { children, .. } => text_nodes(children, out),
-			Node::Param { .. } => {}
+			Node::Plural { arms, .. } | Node::Select { arms, .. } => {
+				for arm in arms {
+					text_nodes(&arm.children, out);
+				}
+			}
+			Node::Param { .. } | Node::Number => {}
 		}
 	}
 }
@@ -167,10 +292,14 @@ proptest! {
 		let mut texts = Vec::new();
 		text_nodes(&nodes, &mut texts);
 
+		// Two sources, because the escape is context-dependent: text outside an
+		// arm appears in the template with `{{` collapsed, and text inside one
+		// appears exactly as written. Accepting either still catches invented
+		// text, which is what this property is for.
 		let source = unescape(&template);
 		for value in texts {
 			prop_assert!(
-				source.contains(&value),
+				source.contains(&value) || template.contains(&value),
 				"tokenising {:?} produced text {:?} that is not in it",
 				template,
 				value
@@ -214,8 +343,23 @@ proptest! {
 		let nodes = tokenize(&template);
 
 		prop_assert_eq!(
-			flatten(&nodes, &params()),
-			interpolate(&template, &params()).value
+			flatten_with(&nodes, &params(), &plurals()),
+			interpolate_with(&template, &params(), &plurals()).value
+		);
+	}
+
+	/// The same agreement over the whole generator, plural arguments included.
+	///
+	/// `t` renders through `interpolate` and `t.rich` through `tokenize` and
+	/// `flatten`: two parsers over one grammar, which is exactly the shape that
+	/// drifts. Tags are excluded only because `flatten` drops their markup by
+	/// design while `interpolate` leaves it in place.
+	#[test]
+	fn both_renderers_agree(template in tagless_templates()) {
+		prop_assert_eq!(
+			flatten_with(&tokenize(&template), &params(), &plurals()),
+			interpolate_with(&template, &params(), &plurals()).value,
+			"template: {:?}", template
 		);
 	}
 }

@@ -272,6 +272,54 @@ export function describeRouting({ root, port, label }) {
 		});
 	});
 
+	describe(`${label}: plural arms are chosen by the language, not the caller`, () => {
+		// The two locale files differ in shape, not only in wording: the English
+		// one has `one` and `other`, the Persian one has neither. Asserting both
+		// against one page is what proves the choice is made from the file that
+		// was loaded rather than from anything in the component.
+		it('English uses its own arms', async () => {
+			const { body } = await follow('/en');
+
+			assert.match(body, /No files yet/);
+			assert.match(body, /1 file</);
+			assert.match(body, /1,234 files/);
+		});
+
+		it('Persian uses its own, including the digits', async () => {
+			const { body } = await follow('/fa');
+
+			assert.match(body, /هنوز فایلی نیست/);
+			// `#` is the number as the locale writes it, so this is the real
+			// check that formatting crossed the boundary rather than `1234`.
+			assert.match(body, /۱٬۲۳۴ فایل/);
+			// One file is not a special case in Persian; it takes `other`.
+			assert.match(body, /۱ فایل/);
+		});
+
+		it('reads ordinal categories where the message asks for a rank', async () => {
+			const { body } = await follow('/en');
+
+			// 2 is `other` as a cardinal and `two` as an ordinal. Reading the
+			// wrong one renders "2th".
+			assert.match(body, /2nd/);
+			assert.doesNotMatch(body, /2th/);
+		});
+	});
+
+	describe(`${label}: the formatters run on the server`, () => {
+		it('formats numbers and dates in the request locale', async () => {
+			const en = await follow('/en');
+			assert.match(en.body, /1,234,567\.89/);
+			assert.match(en.body, /August 31, 2026/);
+
+			const fa = await follow('/fa');
+			assert.match(fa.body, /۱٬۲۳۴٬۵۶۷٫۸۹/);
+			// The Persian calendar, resolved by the runtime with no date library
+			// and no configuration.
+			assert.match(fa.body, /۱۴۰۵/);
+		});
+	});
+
 	describe(`${label}: a missing key does not break the page`, () => {
 		it('renders the developer fallback', async () => {
 			const { body } = await follow('/en');

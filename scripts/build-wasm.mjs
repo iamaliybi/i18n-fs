@@ -63,7 +63,16 @@ const BUILDS = [
 		features: ['full'],
 		// Measured after that removal, not a target. It was 95 KB when the binary
 		// carried routing as well.
-		budgetKb: 60,
+		//
+		// Re-baselined at 68 KB from a measured 63.1 when plural, ordinal and
+		// select arguments were added in 0.8.0. That cost 7.4 KB gzip and the
+		// increase was argued rather than absorbed: the parser is the whole
+		// feature, and the alternative — compiling CLDR's plural rules in beside
+		// it — is the thing this design exists to avoid, since every runtime
+		// already ships them in `Intl.PluralRules`. A first version of the
+		// parser was 13.3 KB worse again purely because comparing `=0` against
+		// `0` went through `str::parse::<f64>`; see `same_number` in format.rs.
+		budgetKb: 68,
 	},
 	{
 		name: 'node',
@@ -79,7 +88,10 @@ const BUILDS = [
 		// browser one because the browser resolves messages, it never enumerates
 		// them, and this binary is read from disk rather than downloaded.
 		features: ['full', 'cli', 'routing'],
-		budgetKb: 100,
+		// Re-baselined at 106 KB from a measured 100.6, for the same parser. This
+		// binary is read from disk and never downloaded, so its size is a build
+		// artefact rather than something a visitor pays for.
+		budgetKb: 106,
 	},
 ];
 

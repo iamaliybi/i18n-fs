@@ -1,0 +1,7 @@
+# Seeds for failure cases proptest has generated in the past. It is
+# automatically read and these particular cases re-run before any
+# novel cases are generated.
+#
+# It is recommended to check this file in to source control so that
+# everyone who runs the test benefits from these saved cases.
+cc 7e415d04037cfc0cdf441f578b1caf5ff64643c8b1af0f2f06976dc9c1be27f2 # shrinks to template = "{count, plural, =3 {exactly three} other {#}}"

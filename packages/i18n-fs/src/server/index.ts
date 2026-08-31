@@ -35,6 +35,10 @@ export {
 
 export { getTranslation } from './translation.js';
 
+export { getFormatter } from './formatter.js';
+
+export { createFormatter, type Formatter, type RelativeTimeOptions } from '../formatter.js';
+
 export {
 	ERROR_CODE_NAMES,
 	ErrorCode,

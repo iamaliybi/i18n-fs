@@ -8,7 +8,14 @@
  */
 
 import { createElement, Fragment, type ReactNode } from 'react';
-import type { I18nErrorPayload, MessageCore, MessageNode, Store } from './core/types.js';
+import type {
+	I18nErrorPayload,
+	MessageArm,
+	MessageCore,
+	MessageNode,
+	Store,
+} from './core/types.js';
+import { pluralArgs, type PluralArg } from './plural.js';
 import type { Reporter } from './report.js';
 import type { AnyKey, ListKey, ScopeShape, TextKey } from './registry.js';
 import { ErrorCode } from './errors.js';
@@ -150,22 +157,50 @@ export function createTranslator(context: TranslatorContext): Translator {
 		}
 	};
 
+	/** Report one argument against the code that describes what went wrong. */
+	const complain = (code: ErrorCode, key: string, detail: string): void => {
+		report({
+			code,
+			locale,
+			namespace,
+			scope: scope ?? null,
+			key,
+			detail,
+		});
+	};
+
 	const interpolate = (
 		template: string,
 		key: string,
 		params?: TranslationParams,
 	): string => {
-		const result = core.interpolate(template, stringifyParams(params));
+		const result = core.interpolate(
+			template,
+			stringifyParams(params),
+			pluralArgs(locale, params),
+		);
 
 		for (const name of result.missing) {
-			report({
-				code: ErrorCode.ParamMissing,
-				locale,
-				namespace,
-				scope: scope ?? null,
+			complain(ErrorCode.ParamMissing, key, `no value supplied for {${name}}`);
+		}
+
+		// Kept apart from `missing` on purpose: "you forgot to pass count" and
+		// "you passed count, but it was a word" are different mistakes with
+		// different fixes, and a single code would have made the caller guess.
+		for (const name of result.notNumeric) {
+			complain(
+				ErrorCode.PluralNotNumeric,
 				key,
-				detail: `no value supplied for {${name}}`,
-			});
+				`{${name}} is used as a plural argument but was not given a number`,
+			);
+		}
+
+		for (const name of result.unmatched) {
+			complain(
+				ErrorCode.NoMatchingArm,
+				key,
+				`{${name}} matched none of its arms and the message has no "other"`,
+			);
 		}
 
 		return result.value;
@@ -182,20 +217,36 @@ export function createTranslator(context: TranslatorContext): Translator {
 		const template = resolveText(key);
 		if (template === undefined) return fail(key, options);
 
+		// Reported once each, matching what the core does for `t`. A message
+		// may use the same argument twice, and two identical diagnostics for
+		// one mistake reads as two mistakes.
+		const seen = new Set<string>();
+		const once = (code: ErrorCode, name: string, detail: string): void => {
+			if (seen.has(`${code}:${name}`)) return;
+			seen.add(`${code}:${name}`);
+			complain(code, key, detail);
+		};
+
 		// Parameters are not substituted before tokenising: a rich parameter may
 		// be a React element, and splicing one into a string would stringify it.
 		return renderNodes(core.tokenize(template), {
 			tags: tags ?? {},
 			params: params ?? {},
+			plurals: pluralArgs(locale, params),
 			onMissingParam: (name) =>
-				report({
-					code: ErrorCode.ParamMissing,
-					locale,
-					namespace,
-					scope: scope ?? null,
-					key,
-					detail: `no value supplied for {${name}}`,
-				}),
+				once(ErrorCode.ParamMissing, name, `no value supplied for {${name}}`),
+			onNotNumeric: (name) =>
+				once(
+					ErrorCode.PluralNotNumeric,
+					name,
+					`{${name}} is used as a plural argument but was not given a number`,
+				),
+			onUnmatched: (name) =>
+				once(
+					ErrorCode.NoMatchingArm,
+					name,
+					`{${name}} matched none of its arms and the message has no "other"`,
+				),
 		});
 	};
 
@@ -233,7 +284,65 @@ export function createTranslator(context: TranslatorContext): Translator {
 interface RenderContext {
 	tags: TagRenderers;
 	params: Record<string, ReactNode | string | number>;
+	plurals: Record<string, PluralArg> | undefined;
+	/** The enclosing plural argument's formatted value, which `#` renders as. */
+	sharp?: string | undefined;
 	onMissingParam: (name: string) => void;
+	onNotNumeric: (name: string) => void;
+	onUnmatched: (name: string) => void;
+}
+
+/**
+ * Whether two written numbers are the same number, for `=0` arms.
+ *
+ * The mirror of `same_number` in the core. It has to be: `t` selects an arm in
+ * Rust and `t.rich` selects one here, and a message must not read differently
+ * depending on which one rendered it. `rich-agrees-with-t` in the tests is what
+ * holds the two together.
+ */
+function sameNumber(left: string, right: string): boolean {
+	const a = Number(left);
+	const b = Number(right);
+
+	if (Number.isFinite(a) && Number.isFinite(b)) return a === b;
+	return left === right;
+}
+
+/**
+ * Which arm an argument selects, or `undefined` when nothing matched and there
+ * is no `other`.
+ *
+ * `=0` and friends are tried first and beat the category, so "no items at all"
+ * can be written without disturbing the grammatical arms around it.
+ */
+function chooseArm(
+	node: Extract<MessageNode, { type: 'plural' | 'select' }>,
+	value: string,
+	category: string | undefined,
+): MessageArm | undefined {
+	for (const arm of node.arms) {
+		if (arm.key.startsWith('=') && sameNumber(arm.key.slice(1), value)) return arm;
+	}
+
+	const wanted = node.type === 'select' ? value : category;
+
+	if (wanted !== undefined) {
+		const matched = node.arms.find((arm) => arm.key === wanted);
+		if (matched) return matched;
+	}
+
+	return node.arms.find((arm) => arm.key === 'other');
+}
+
+/** The plain-text form of a parameter, for choosing an arm. */
+function selectorFor(value: ReactNode | string | number): string | undefined {
+	if (typeof value === 'string') return value;
+	if (typeof value === 'number') return String(value);
+
+	// A React element can be interpolated into a message but cannot choose one
+	// of its arms, so it is treated as absent rather than stringified into
+	// something that would match nothing.
+	return undefined;
 }
 
 /**
@@ -282,6 +391,40 @@ function renderNode(node: MessageNode, context: RenderContext, index: number): R
 			// renderer belongs to the caller, so a keyed Fragment supplies one
 			// without touching whatever they returned.
 			return createElement(Fragment, { key: index }, render(children));
+		}
+
+		case 'number':
+			// Only reachable inside a plural arm, where the core set `sharp`.
+			return context.sharp ?? '#';
+
+		case 'plural':
+		case 'select': {
+			const raw = context.params[node.name];
+			const value = raw === undefined ? undefined : selectorFor(raw);
+
+			if (value === undefined) {
+				// Same treatment as a bare placeholder with no value: rendering
+				// `other` instead would print "# files" with no number in it.
+				context.onMissingParam(node.name);
+				return `{${node.name}}`;
+			}
+
+			const plural = node.type === 'plural' ? context.plurals?.[node.name] : undefined;
+			if (node.type === 'plural' && !plural) context.onNotNumeric(node.name);
+
+			const category = plural
+				? node.type === 'plural' && node.ordinal
+					? plural.ordinal
+					: plural.cardinal
+				: undefined;
+			const arm = chooseArm(node, value, category);
+
+			if (!arm) {
+				context.onUnmatched(node.name);
+				return `{${node.name}}`;
+			}
+
+			return renderNodes(arm.children, { ...context, sharp: plural?.formatted });
 		}
 	}
 }

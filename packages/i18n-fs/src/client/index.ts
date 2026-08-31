@@ -18,6 +18,10 @@ export { useTranslation } from './useTranslation.js';
 
 export { usePrefetch } from './prefetch.js';
 
+export { useFormatter } from './useFormatter.js';
+
+export { createFormatter, type Formatter, type RelativeTimeOptions } from '../formatter.js';
+
 export {
 	ERROR_CODE_NAMES,
 	ErrorCode,

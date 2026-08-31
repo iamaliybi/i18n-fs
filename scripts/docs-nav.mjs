@@ -27,14 +27,16 @@ const guides = join(root, 'docs', 'guide');
  *
  * Deliberately not alphabetical and not the order they were written: this is
  * the order someone meets the ideas in. Setup, then where files go, then
- * reading a message, then how the URL carries the locale, then the piece that
- * makes routing work, then the build-time tools, then what happens when
- * something is wrong, then the reference to come back to.
+ * reading a message, then the two things a message needs that are not
+ * translation, then how the URL carries the locale, then the piece that makes
+ * routing work, then the build-time tools, then what happens when something is
+ * wrong, then the reference to come back to.
  */
 const ORDER = [
 	{ file: 'getting-started.md', title: 'Getting started' },
 	{ file: 'folder-structure.md', title: 'Folder structure' },
 	{ file: 'translating.md', title: 'Translating' },
+	{ file: 'plurals-and-formatting.md', title: 'Plurals and formatting' },
 	{ file: 'routing.md', title: 'Routing' },
 	{ file: 'proxy.md', title: 'The proxy' },
 	{ file: 'cli.md', title: 'The CLI' },

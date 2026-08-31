@@ -127,7 +127,7 @@ describe('what the compiled core actually emits', () => {
 		// A code the core can emit but the JavaScript cannot name would print as
 		// UNKNOWN_n to whoever hit it.
 		const named = Object.values(ErrorCode).sort((a, b) => a - b);
-		expect(named).toEqual([100, 101, 200, 201, 202, 300, 400]);
+		expect(named).toEqual([100, 101, 200, 201, 202, 300, 301, 302, 400]);
 		expect(Object.keys(ERROR_CODE_NAMES)).toHaveLength(named.length);
 	});
 });

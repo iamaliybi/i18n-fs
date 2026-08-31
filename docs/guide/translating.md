@@ -101,6 +101,19 @@ t('greeting', { name: 'Ali' });
 
 An empty gap hides the mistake; a visible marker does not.
 
+### Counting things
+
+A message that has to say `1 file` or `2 files` does not branch in your
+component — the grammar belongs in the message, where the translator can reach
+it:
+
+```json
+{ "files": "{count, plural, one {# file} other {# files}}" }
+```
+
+See **[plurals and formatting](./plurals-and-formatting.md)** for `plural`,
+`selectordinal`, `select`, and for dates, money and lists.
+
 ### `options.fallback`
 
 What to show when the lookup fails. This is the **only** fallback there is —
@@ -524,6 +537,6 @@ console diagnostics say so too.
 
 | | | |
 | :-- | :--: | --: |
-| ← [Folder structure](./folder-structure.md) | [All guides](../README.md) | [Routing](./routing.md) → |
+| ← [Folder structure](./folder-structure.md) | [All guides](../README.md) | [Plurals and formatting](./plurals-and-formatting.md) → |
 
 <!-- nav:end -->

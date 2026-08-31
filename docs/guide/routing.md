@@ -219,6 +219,6 @@ Locale-free paths, like the client wrappers.
 
 | | | |
 | :-- | :--: | --: |
-| ← [Translating](./translating.md) | [All guides](../README.md) | [The proxy](./proxy.md) → |
+| ← [Plurals and formatting](./plurals-and-formatting.md) | [All guides](../README.md) | [The proxy](./proxy.md) → |
 
 <!-- nav:end -->

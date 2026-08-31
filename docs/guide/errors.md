@@ -43,6 +43,8 @@ import { ErrorCode, errorCodeName, isNamespaceError, isLookupError } from 'i18n-
 | `201` | `KEY_NOT_FOUND` | the scope exists; the key does not |
 | `202` | `TYPE_MISMATCH` | the key exists but holds the wrong shape |
 | `300` | `PARAM_MISSING` | a `{placeholder}` had no matching parameter |
+| `301` | `PLURAL_NOT_NUMERIC` | a `plural` argument was given something that is not a number |
+| `302` | `NO_MATCHING_ARM` | an argument matched no arm and the message has no `other` |
 | `400` | `INVALID_CONFIG` | the configuration is not internally consistent |
 
 The ranges are meaningful, so a class of problem is one comparison away:

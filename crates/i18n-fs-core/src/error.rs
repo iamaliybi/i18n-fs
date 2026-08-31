@@ -48,6 +48,12 @@ pub enum ErrorCode {
 	TypeMismatch = 202,
 	/// A `{placeholder}` in the message had no matching entry in `params`.
 	ParamMissing = 300,
+	/// A `plural` or `selectordinal` argument was given a value that is not a
+	/// number, so no grammatical category could be computed for it.
+	PluralNotNumeric = 301,
+	/// A `plural` or `select` argument matched none of its arms and had no
+	/// `other` to fall back to.
+	NoMatchingArm = 302,
 	/// The `i18n-fs.config.ts` snapshot is not internally consistent.
 	InvalidConfig = 400,
 }
@@ -55,13 +61,15 @@ pub enum ErrorCode {
 impl ErrorCode {
 	/// Every code, in numeric order. Used by the JavaScript layer's tests to
 	/// prove the two halves list exactly the same set.
-	pub const ALL: [Self; 7] = [
+	pub const ALL: [Self; 9] = [
 		Self::NamespaceNotFound,
 		Self::InvalidJson,
 		Self::ScopeNotFound,
 		Self::KeyNotFound,
 		Self::TypeMismatch,
 		Self::ParamMissing,
+		Self::PluralNotNumeric,
+		Self::NoMatchingArm,
 		Self::InvalidConfig,
 	];
 
@@ -79,6 +87,8 @@ impl ErrorCode {
 			201 => Some(Self::KeyNotFound),
 			202 => Some(Self::TypeMismatch),
 			300 => Some(Self::ParamMissing),
+			301 => Some(Self::PluralNotNumeric),
+			302 => Some(Self::NoMatchingArm),
 			400 => Some(Self::InvalidConfig),
 			_ => None,
 		}
@@ -97,6 +107,8 @@ impl ErrorCode {
 			Self::KeyNotFound => "KEY_NOT_FOUND",
 			Self::TypeMismatch => "TYPE_MISMATCH",
 			Self::ParamMissing => "PARAM_MISSING",
+			Self::PluralNotNumeric => "PLURAL_NOT_NUMERIC",
+			Self::NoMatchingArm => "NO_MATCHING_ARM",
 			Self::InvalidConfig => "INVALID_CONFIG",
 		}
 	}
@@ -270,6 +282,18 @@ impl fmt::Display for I18nError {
 			ErrorCode::ParamMissing => write!(
 				f,
 				"message \"{}\" in namespace \"{}\" expects a parameter that was not provided.",
+				self.path(),
+				self.namespace
+			)?,
+			ErrorCode::PluralNotNumeric => write!(
+				f,
+				"message \"{}\" in namespace \"{}\" uses a plural argument that was 				 not given a number, so no grammatical category applies to it.",
+				self.path(),
+				self.namespace
+			)?,
+			ErrorCode::NoMatchingArm => write!(
+				f,
+				"message \"{}\" in namespace \"{}\" has an argument that matched none 				 of its arms and has no \"other\".",
 				self.path(),
 				self.namespace
 			)?,

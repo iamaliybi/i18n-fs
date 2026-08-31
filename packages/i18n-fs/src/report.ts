@@ -24,6 +24,12 @@ const WORDING: Record<ErrorCode, (error: I18nErrorPayload) => string> = {
 	[ErrorCode.TypeMismatch]: (e) => `key "${path(e)}" in "${e.namespace}" has an unexpected type`,
 	[ErrorCode.ParamMissing]: (e) =>
 		`message "${path(e)}" in "${e.namespace}" expects a parameter that was not provided`,
+	[ErrorCode.PluralNotNumeric]: (e) =>
+		`message "${path(e)}" in "${e.namespace}" uses a plural argument that was not ` +
+		`given a number, so no grammatical category applies to it`,
+	[ErrorCode.NoMatchingArm]: (e) =>
+		`message "${path(e)}" in "${e.namespace}" has an argument that matched none of ` +
+		`its arms and has no "other"`,
 	[ErrorCode.InvalidConfig]: () => 'the i18n-fs configuration is invalid',
 };
 

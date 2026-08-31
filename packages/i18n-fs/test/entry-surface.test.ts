@@ -53,6 +53,15 @@ const ERRORS = [
 	'isNamespaceError',
 ];
 
+/**
+ * The formatter, wherever one is offered.
+ *
+ * Both entry points carry it because both need it and it costs nothing to
+ * carry: it is `Intl`, which the runtime already has, so unlike the translator
+ * this pulls in no WebAssembly at all.
+ */
+const FORMATTER = ['createFormatter', 'Formatter', 'RelativeTimeOptions'];
+
 /** The translator's types, wherever a translator is returned. */
 const TRANSLATOR = [
 	'NamespaceState',
@@ -69,6 +78,8 @@ describe('i18n-fs/client', () => {
 			[
 				...ERRORS,
 				...TRANSLATOR,
+				...FORMATTER,
+				'useFormatter',
 				'I18nClientProvider',
 				'I18nClientProviderProps',
 				'I18nContextValue',
@@ -133,6 +144,8 @@ describe('i18n-fs/server', () => {
 			[
 				...ERRORS,
 				...TRANSLATOR,
+				...FORMATTER,
+				'getFormatter',
 				'I18nProvider',
 				'I18nProviderProps',
 				'LOCALE_HEADER',
