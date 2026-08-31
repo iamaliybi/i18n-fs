@@ -6,7 +6,9 @@ writes dates.
 
 Both are the runtime's `Intl`, not this package's. That matters for what they
 cost, and it is worth saying up front: **the formatters download nothing**, and
-plural support added 7.4 KB gzip to the binary a Client Component fetches.
+plural support added about 7 KB gzip to the binary a Client Component fetches —
+55.7 to 62.8. The [current figures](../../README.md#what-it-costs-a-visitor) are
+measured on every release rather than written down once.
 
 ---
 

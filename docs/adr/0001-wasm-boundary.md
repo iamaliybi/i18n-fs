@@ -122,8 +122,8 @@ file:
 | build | budget | why it moved |
 | --- | --- | --- |
 | `edge` | 40 KB | was 65; the primitive boundary above took it to 38.3 |
-| `browser` | 68 KB | was 95; dropping routing took it to 55.7; plural arguments took it to 63.1 ([ADR 0011](./0011-plurals-and-formatting.md)) |
-| `node` | 106 KB | was 100; the same parser took it to 100.6. Read from disk, downloaded by nobody |
+| `browser` | 68 KB | was 95; dropping routing took it to 55.7; plural arguments took it to 62.8 ([ADR 0011](./0011-plurals-and-formatting.md)) |
+| `node` | 106 KB | was 100; the same parser took it to 100.3. Read from disk, downloaded by nobody |
 
 Raising a budget is a decision to record, not a step to take when a build turns
 red. The browser one was raised once for the opposite reason — removing a
