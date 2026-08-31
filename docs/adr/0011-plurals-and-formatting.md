@@ -78,10 +78,17 @@ resolves to it without being asked, so a Jalali date needs no dependency.
 
 ## What it cost
 
-The browser binary went from **55.7 KB to 63.1 KB gzip**, and its budget was
+The browser binary went from **55.7 KB to 62.8 KB gzip**, and its budget was
 re-baselined from 60 to 68 with the reasoning recorded beside it in
-`scripts/build-wasm.mjs`. The node binary went from 93.9 to 100.6 KB; it is read
+`scripts/build-wasm.mjs`. The node binary went from 93.9 to 100.3 KB; it is read
 from disk and never downloaded.
+
+Those are the figures 0.8.0 shipped with. The same source measured 63.1 KB on a
+different build of the same commit — a 0.5% spread, which is why
+`measure --check` compares within 2% rather than exactly, and why the README is
+regenerated during the version bump rather than trusted from whenever the
+feature was written. Quoting the tighter number here and letting the README
+carry another would have made the two disagree for no reason.
 
 A first version of the parser was **13.3 KB gzip worse again**, entirely because
 `same_number` compared `=0` against `0` through `str::parse::<f64>`. Rust's
