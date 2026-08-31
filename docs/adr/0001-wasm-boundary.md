@@ -116,19 +116,26 @@ nobody a download.
 
 `scripts/build-wasm.mjs` enforces a gzip budget per build so none of them can
 drift upward unnoticed. Each is a measured baseline rather than a target that
-was met, and each has been re-baselined once, deliberately:
+was met, and the reasoning for every move is recorded beside the number in that
+file:
 
 | build | budget | why it moved |
 | --- | --- | --- |
 | `edge` | 40 KB | was 65; the primitive boundary above took it to 38.3 |
-| `browser` | 60 KB | was 95; dropping routing took it to 55.7 |
-| `node` | 100 KB | unchanged; read from disk, downloaded by nobody |
+| `browser` | 68 KB | was 95; dropping routing took it to 55.7; plural arguments took it to 63.1 ([ADR 0011](./0011-plurals-and-formatting.md)) |
+| `node` | 106 KB | was 100; the same parser took it to 100.6. Read from disk, downloaded by nobody |
 
 Raising a budget is a decision to record, not a step to take when a build turns
 red. The browser one was raised once for the opposite reason — removing a
 per-lookup allocation cost 0.5 KB and left about 100 bytes of headroom, which
 would have failed CI on the next unrelated change — and then lowered again when
 routing left that binary.
+
+The plural parser is the clearest case of the budget doing its job. The first
+version of it went 20.4 KB over, and the report is what prompted the question:
+13.3 KB of that turned out to be Rust's string-to-float conversion, linked
+solely to compare `=0` against `0`. Without a build that failed, that would have
+shipped.
 
 ## Consequences
 

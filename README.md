@@ -87,7 +87,7 @@ example app and writes the tables.
 
 | what | when it is downloaded | gzip | brotli |
 | --- | --- | --- | --- |
-| **Client Components** — the WebAssembly binary | only when a Client Component calls `useTranslation` | **63.1 KB** | **53.8 KB** |
+| **Client Components** — the WebAssembly binary | only when a Client Component calls `useTranslation` | **63.1 KB** | **53.7 KB** |
 | **Server Components only** | never — nothing is sent to the browser | **0 KB** | **0 KB** |
 | **The proxy** | never — it runs on the server | **0 KB** | **0 KB** |
 
@@ -96,7 +96,7 @@ Sizes of every binary, including the ones a visitor never receives:
 | binary | used by | downloaded? | raw | gzip | brotli |
 | --- | --- | --- | --- | --- | --- |
 | `edge` | the proxy, on every request | server-side — never downloaded | 66.3 KB | 37.8 KB | 33.5 KB |
-| `browser` | Client Components | downloaded, and only when one is used | 139.4 KB | 63.1 KB | 53.8 KB |
+| `browser` | Client Components | downloaded, and only when one is used | 139.5 KB | 63.1 KB | 53.7 KB |
 | `node` | Server Components and the CLI | read from disk — never downloaded | 211.3 KB | 100.6 KB | 85.7 KB |
 
 Taken from the built `examples/next-15-middleware`, which uses client translations. The JavaScript that instantiates the binary is a couple of kilobytes and is folded into a chunk the page loads anyway.

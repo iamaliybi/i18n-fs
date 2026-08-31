@@ -36,3 +36,4 @@ first:
 | [0008](adr/0008-client-layer.md) | suspension, and why the promise cache is module-scoped |
 | [0009](adr/0009-middleware-and-navigation.md) | the proxy, navigation, and where the WASM actually loads |
 | [0010](adr/0010-package-manager.md) | npm workspaces, not pnpm |
+| [0011](adr/0011-plurals-and-formatting.md) | plurals in the message, CLDR in the runtime |
