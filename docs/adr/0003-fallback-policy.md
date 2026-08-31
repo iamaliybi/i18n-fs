@@ -60,4 +60,7 @@ re-renders on every keystroke should not drown the console.
   the fix follows from the message.
 - Because there is no cross-language fallback, a missing translation is visible
   in every locale. The CLI's key diff (PR #2) is what turns that into a build
-  failure rather than a surprise.
+  failure rather than a surprise — unless a project sets `compareLocales: false`
+  because its locales are not translations of one another, in which case the
+  fallback above is the whole of the safety net and the diagnostic is how a
+  genuine omission gets noticed.

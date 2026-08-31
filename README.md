@@ -34,6 +34,10 @@ for the readers of exactly one language.
 npx i18n-fs check --strict     # exits non-zero; put it in CI
 ```
 
+Set `compareLocales: false` when the locales are not translations of one another
+— a German site written for a German audience has different keys by design, and
+that is not a defect to report.
+
 **Types generated from the files you actually have.** `i18n-fs build` writes the
 namespaces, the scopes inside them, and which keys are text and which are lists.
 You write no types yourself, and a mistyped or renamed key is a compile error —

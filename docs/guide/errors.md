@@ -167,6 +167,13 @@ page.
 
 Run it in CI. See [the CLI guide](./cli.md).
 
+The comparison assumes the locales are translations of one another. When they
+are not — a German site written for a German audience rather than translated —
+`compareLocales: false` turns it off, and the fallback rule above is what you
+are left with: a key that is absent renders the developer's string or the key,
+and says `KEY_NOT_FOUND`. That is the trade, and it is
+[spelled out in the CLI guide](./cli.md#when-the-locales-are-not-translations-of-one-another).
+
 <!-- nav:start -->
 
 ---

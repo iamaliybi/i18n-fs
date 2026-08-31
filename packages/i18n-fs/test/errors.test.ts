@@ -117,6 +117,7 @@ describe('what the compiled core actually emits', () => {
 			domains: [],
 			cookie: { name: 'X', maxAge: 1, sameSite: 'lax', path: '/', secure: true },
 			messagesDir: 'locales',
+			compareLocales: true,
 			debug: false,
 		});
 

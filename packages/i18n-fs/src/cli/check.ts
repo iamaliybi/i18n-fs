@@ -8,6 +8,14 @@
  * The default locale is the reference. Every other locale is compared against
  * it — by key *and* by shape, since a key that is a string in one locale and a
  * list in another passes a name-only comparison and then breaks `t.array`.
+ *
+ * That comparison assumes the locales are translations of one another, which is
+ * usually true and sometimes not: a site whose German pages are written for a
+ * German audience rather than translated from the English ones has different
+ * keys on purpose. `compareLocales: false` turns the comparison off — and only
+ * the comparison. Malformed JSON, an empty namespace and a directory for a
+ * locale that is not configured are statements about one file, and are still
+ * reported.
  */
 
 import type { ResolvedI18nFsConfig } from '../config.js';
@@ -77,6 +85,13 @@ export function check(
 	core: CliCore,
 	config: ResolvedI18nFsConfig,
 	scanned: ScanResult,
+	/**
+	 * Whether to compare the locales against each other. Defaults to the
+	 * configured value; the CLI passes an explicit one for
+	 * `--compare-locales`, which answers the question once without editing the
+	 * configuration to do it.
+	 */
+	compare: boolean = config.compareLocales,
 ): { findings: Finding[]; parsed: Parsed[] } {
 	const findings: Finding[] = [];
 
@@ -150,7 +165,9 @@ export function check(
 		}
 	}
 
-	findings.push(...compareLocales(config, parsed, unparsed));
+	if (compare) {
+		findings.push(...compareLocales(config, parsed, unparsed));
+	}
 
 	return { findings, parsed };
 }

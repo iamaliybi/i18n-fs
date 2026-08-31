@@ -75,6 +75,42 @@ export interface I18nFsConfig {
 	 * `i18n-fs` imposes no structure and no shared-key convention.
 	 */
 	messagesDir?: string;
+	/**
+	 * Whether every locale must define the same keys as the default one.
+	 * Defaults to `true`.
+	 *
+	 * With it on, `i18n-fs check` reports a key present in the default locale
+	 * and absent elsewhere as an error, and `build` refuses to write. That is
+	 * the right default: this package never falls back to another locale's
+	 * content, so a key missing from one language is invisible until somebody
+	 * reading that language hits the page.
+	 *
+	 * Turn it off when the locales are not translations of one another. A site
+	 * whose German pages are written for a German audience rather than
+	 * translated from the English ones has different keys by design, and there
+	 * is nothing to report.
+	 *
+	 * ```ts
+	 * export default defineConfig({
+	 *   locales: ['en', 'de'],
+	 *   defaultLocale: 'en',
+	 *   compareLocales: false,
+	 * });
+	 * ```
+	 *
+	 * It also changes what `build` generates. With comparison on, the typed key
+	 * registry comes from the default locale, because `check` guarantees the
+	 * others match it. With comparison off there is no such guarantee, so the
+	 * registry is the union of every locale — otherwise a key that exists only
+	 * in German would not compile.
+	 *
+	 * Everything that is not a comparison between locales still runs: malformed
+	 * JSON, an empty namespace, a directory for a locale that is not configured.
+	 *
+	 * `i18n-fs check --compare-locales` runs the comparison anyway, without
+	 * changing the file, for when you want to see the differences once.
+	 */
+	compareLocales?: boolean;
 	/** Emit developer diagnostics. Defaults to `process.env.NODE_ENV !== 'production'`. */
 	debug?: boolean;
 }
@@ -92,6 +128,7 @@ export interface ResolvedI18nFsConfig {
 	domains: Required<DomainRule>[];
 	cookie: Required<CookieConfig>;
 	messagesDir: string;
+	compareLocales: boolean;
 	debug: boolean;
 }
 
@@ -122,6 +159,7 @@ export const CONFIG_DEFAULTS = {
 	strategy: 'path',
 	prefix: 'as-needed',
 	messagesDir: 'locales',
+	compareLocales: true,
 	cookie: {
 		name: 'I18N_FS_LOCALE',
 		maxAge: 60 * 60 * 24 * 365,

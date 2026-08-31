@@ -426,3 +426,145 @@ describe('artefacts', () => {
 		expect(second).toEqual(first);
 	});
 });
+
+describe('compareLocales', () => {
+	/**
+	 * A project whose German tree is written for a German audience rather than
+	 * translated from the English one: it drops two keys and adds two of its
+	 * own, on purpose.
+	 */
+	const DIVERGENT = {
+		'public/locales/en/home/hero.json': JSON.stringify({
+			title: 'Welcome',
+			subtitle: 'An English pitch',
+			bullets: ['Fast', 'Small'],
+		}),
+		'public/locales/de/home/hero.json': JSON.stringify({
+			title: 'Willkommen',
+			angebot: 'Ein deutsches Angebot',
+			kontakt: 'Rufen Sie uns an',
+		}),
+	};
+
+	const CONFIG: I18nFsConfig = { locales: ['en', 'de'], defaultLocale: 'en' };
+
+	it('defaults to on, so a divergent locale is still an error', async () => {
+		const { config, findings } = await run(await project(CONFIG, DIVERGENT));
+
+		expect(config.compareLocales).toBe(true);
+		expect(codes(findings)).toContain('KEYS_MISSING');
+		expect(codes(findings)).toContain('KEYS_EXTRA');
+	});
+
+	it('says nothing about the differences when it is off', async () => {
+		const root = await project({ ...CONFIG, compareLocales: false }, DIVERGENT);
+		const { config, findings } = await run(root);
+
+		expect(config.compareLocales).toBe(false);
+		// Silent, not downgraded to a warning: the project has said these
+		// locales are not translations of one another, so there is nothing to
+		// report rather than something to mention.
+		expect(findings).toEqual([]);
+	});
+
+	it('still reports what is wrong with a single file', async () => {
+		// Only the comparison between locales is switched off. A file that does
+		// not parse is a statement about that file, and is not a comparison.
+		const root = await project({ ...CONFIG, compareLocales: false }, {
+			...DIVERGENT,
+			'public/locales/de/broken.json': '{ not json',
+			'public/locales/en/empty.json': '{}',
+		});
+		const { findings } = await run(root);
+
+		expect(codes(findings)).toContain('INVALID_JSON');
+		expect(codes(findings)).toContain('NAMESPACE_EMPTY');
+		expect(codes(findings)).not.toContain('KEYS_MISSING');
+	});
+
+	it('does not hide a locale directory that was never configured', async () => {
+		const root = await project({ ...CONFIG, compareLocales: false }, {
+			...DIVERGENT,
+			'public/locales/it/home/hero.json': JSON.stringify({ title: 'Benvenuto' }),
+		});
+		const { findings } = await run(root);
+
+		expect(codes(findings)).toContain('LOCALE_DIRECTORY_UNKNOWN');
+	});
+
+	it('runs the comparison anyway when asked explicitly', async () => {
+		// `check --compare-locales`, which answers the question once without
+		// editing the configuration to do it.
+		const root = await project({ ...CONFIG, compareLocales: false }, DIVERGENT);
+		const configPath = findConfig(root)!;
+		const config = resolveConfig(await loadConfig(configPath));
+		const scanned = await scan(root, config);
+
+		const { findings } = check(core, config, scanned, true);
+
+		expect(codes(findings)).toContain('KEYS_MISSING');
+	});
+});
+
+describe('the typed registry follows compareLocales', () => {
+	const CONFIG: I18nFsConfig = { locales: ['en', 'de'], defaultLocale: 'en' };
+
+	const FILES = {
+		'public/locales/en/home.json': JSON.stringify({ title: 'Welcome', tags: ['a'] }),
+		'public/locales/de/home.json': JSON.stringify({ title: 'Willkommen', angebot: 'x' }),
+	};
+
+	async function registry(config: I18nFsConfig) {
+		const root = await project(config, FILES);
+		const { config: resolved, scanned, parsed } = await run(root);
+
+		const namespaces = parsed.map((item) => ({
+			locale: item.file.locale,
+			namespace: item.file.namespace,
+			hash: item.file.hash,
+			entries: item.entries,
+		}));
+
+		const scopes = new Map<string, string[]>();
+		for (const item of parsed) {
+			if (resolved.compareLocales && item.file.locale !== resolved.defaultLocale) continue;
+			const existing = scopes.get(item.file.namespace);
+			scopes.set(
+				item.file.namespace,
+				existing ? [...new Set([...existing, ...item.scopes])].sort() : item.scopes,
+			);
+		}
+
+		void scanned;
+		return buildTypes(resolved, namespaces, scopes);
+	}
+
+	it('types only the default locale when the locales are compared', async () => {
+		const types = await registry(CONFIG);
+
+		expect(types).toContain("'title'");
+		// `check` guarantees every locale has these, so typing anything else
+		// would type a key that is missing where it is used.
+		expect(types).not.toContain('angebot');
+		expect(types).toContain('Generated from the default locale');
+	});
+
+	it('types every locale when they are not', async () => {
+		// Without the guarantee, the default locale is no longer the whole
+		// truth. A German-only key that did not compile would make the option
+		// useless to exactly the projects it exists for.
+		const types = await registry({ ...CONFIG, compareLocales: false });
+
+		expect(types).toContain("'title'");
+		expect(types).toContain('angebot');
+		expect(types).toContain('Generated from every locale, merged');
+	});
+
+	it('keeps a list a list when merging', async () => {
+		// `tags` exists only in English and is a list. Merging must not flatten
+		// it into a text key, or `t.array` would stop type-checking.
+		const types = await registry({ ...CONFIG, compareLocales: false });
+
+		expect(types).toMatch(/list: 'tags'/);
+	});
+});

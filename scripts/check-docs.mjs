@@ -42,6 +42,33 @@ const published = normalize(join(pkg, 'README.md'));
 
 const markdown = walk(root, (name) => name.endsWith('.md'));
 
+/**
+ * GitHub's heading-to-anchor rule: lowercased, punctuation dropped, spaces
+ * hyphenated. Close enough for headings written in prose, which is all of them.
+ */
+function slug(heading) {
+	return heading
+		.toLowerCase()
+		.replace(/[`*_]/g, '')
+		.replace(/[^\w\s-]/g, '')
+		.trim()
+		.replace(/\s+/g, '-');
+}
+
+const headingCache = new Map();
+
+/** Every anchor a file offers. */
+function headings(path) {
+	let found = headingCache.get(path);
+	if (found) return found;
+
+	const text = existsSync(path) ? readFileSync(path, 'utf8') : '';
+	found = new Set([...text.matchAll(/^#{1,6}\s+(.+?)\s*$/gm)].map(([, h]) => slug(h)));
+
+	headingCache.set(path, found);
+	return found;
+}
+
 for (const path of markdown) {
 	const text = readFileSync(path, 'utf8');
 	const where = relative(root, path).replaceAll('\\', '/');
@@ -56,11 +83,22 @@ for (const path of markdown) {
 
 		if (EXTERNAL.test(target)) continue;
 
-		const file = target.split('#')[0];
-		if (!file) continue;
+		const [file, anchor] = target.split('#');
 
-		if (!existsSync(resolve(dirname(path), file))) {
+		const destination = file ? resolve(dirname(path), file) : path;
+
+		if (file && !existsSync(destination)) {
 			problems.push(`${where}: broken link [${label}](${target})`);
+			continue;
+		}
+
+		// A link to a heading that no longer exists lands the reader at the top
+		// of the right page with no sign anything went wrong, which is worse
+		// than a 404 — the reader assumes the section was removed rather than
+		// renamed. Only checked for files this repository owns; an anchor in
+		// somebody else's page is not ours to verify.
+		if (anchor && !headings(destination).has(anchor)) {
+			problems.push(`${where}: [${label}](${target}) points at no such heading`);
 		}
 	}
 }
