@@ -8,6 +8,7 @@
  */
 
 import type { ErrorCode } from '../errors.js';
+import type { PluralArg } from '../plural.js';
 
 export type { ErrorCode };
 
@@ -77,13 +78,28 @@ export interface Decision {
 export type MessageNode =
 	| { type: 'text'; value: string }
 	| { type: 'param'; name: string }
-	| { type: 'tag'; name: string; children: MessageNode[] };
+	| { type: 'tag'; name: string; children: MessageNode[] }
+	/** The `#` inside a plural arm: the argument, formatted for the locale. */
+	| { type: 'number' }
+	| { type: 'plural'; name: string; ordinal: boolean; arms: MessageArm[] }
+	| { type: 'select'; name: string; arms: MessageArm[] };
+
+/** One `key {content}` arm of a plural or select argument. */
+export interface MessageArm {
+	/** `=0`, a CLDR category (`one`, `few`, …), or a `select` value. */
+	key: string;
+	children: MessageNode[];
+}
 
 /** Result of substituting placeholders in a plain message. */
 export interface Interpolation {
 	value: string;
 	/** Placeholders with no matching parameter. Their markers stay in `value`. */
 	missing: string[];
+	/** Plural arguments whose value was not a number, so no category applied. */
+	notNumeric: string[];
+	/** Arguments that matched no arm and had no `other`. */
+	unmatched: string[];
 }
 
 /** One parsed namespace file. */
@@ -165,7 +181,11 @@ export interface EdgeCore {
 export interface MessageCore {
 	coreVersion(): string;
 	Store: new (locale: string, namespace: string, raw: string) => Store;
-	interpolate(template: string, params?: Record<string, string>): Interpolation;
+	interpolate(
+		template: string,
+		params?: Record<string, string>,
+		plurals?: Record<string, PluralArg>,
+	): Interpolation;
 	tokenize(template: string): MessageNode[];
 }
 

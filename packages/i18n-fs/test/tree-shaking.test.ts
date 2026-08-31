@@ -80,6 +80,12 @@ describe('importing one thing costs one thing', () => {
 	it.each([
 		['client/index.js', 'useLocale'],
 		['client/index.js', 'useI18nContext'],
+		// Formatting is `Intl`, which the runtime already has. A page that shows
+		// a Jalali date and a price but translates nothing on the client
+		// downloads no binary at all — the claim is worth pinning, because it is
+		// the reason these live outside the core.
+		['client/index.js', 'useFormatter'],
+		['client/index.js', 'createFormatter'],
 		['navigation.js', 'Link'],
 		['navigation.js', 'usePathname'],
 		['navigation.js', 'useRouter'],

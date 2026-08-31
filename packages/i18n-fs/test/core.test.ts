@@ -162,11 +162,15 @@ describe('formatting', () => {
 		expect(core.interpolate('Hello {name}', { name: 'Ali' })).toEqual({
 			value: 'Hello Ali',
 			missing: [],
+			notNumeric: [],
+			unmatched: [],
 		});
 
 		expect(core.interpolate('Hello {name}', {})).toEqual({
 			value: 'Hello {name}',
 			missing: ['name'],
+			notNumeric: [],
+			unmatched: [],
 		});
 	});
 

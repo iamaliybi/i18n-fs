@@ -397,24 +397,44 @@ mod messages {
 		}
 	}
 
-	/// Substitute `{placeholder}` values in a plain message.
+	/// Substitute `{placeholder}` values and select plural arms.
 	///
-	/// Returns `{ value, missing }`. Missing placeholders are left visible in
-	/// `value` and listed in `missing` so the caller can report `PARAM_MISSING`.
+	/// `plurals` maps an argument name to what the caller's `Intl` said about
+	/// it — its cardinal and ordinal categories, and its formatted form. The
+	/// categories are computed in JavaScript because every runtime already
+	/// ships CLDR in `Intl.PluralRules`, and a second copy compiled in here
+	/// would be a table in a binary that gets downloaded.
+	///
+	/// Returns `{ value, missing, notNumeric, unmatched }`: the three lists are
+	/// the arguments that could not be rendered as written, each mapping to its
+	/// own error code so a diagnostic can say which of the three happened.
 	#[wasm_bindgen(js_name = interpolate)]
-	pub fn interpolate(template: &str, params: JsValue) -> Result<JsValue, JsValue> {
-		let params: BTreeMap<String, String> = if params.is_undefined() || params.is_null() {
-			BTreeMap::new()
-		} else {
-			serde_wasm_bindgen::from_value(params).map_err(to_js_error)?
-		};
+	pub fn interpolate(
+		template: &str,
+		params: JsValue,
+		plurals: JsValue,
+	) -> Result<JsValue, JsValue> {
+		let params: BTreeMap<String, String> = from_js_map(params)?;
+		let plurals: BTreeMap<String, i18n_fs_core::PluralArg> = from_js_map(plurals)?;
 
-		let result = i18n_fs_core::interpolate(template, &params);
+		let result = i18n_fs_core::interpolate_with(template, &params, &plurals);
 		let output = InterpolationResult {
 			value: result.value,
 			missing: result.missing,
+			not_numeric: result.not_numeric,
+			unmatched: result.unmatched,
 		};
 		to_js(&output)
+	}
+
+	/// Deserialise an optional map argument, treating absent as empty.
+	fn from_js_map<T: serde::de::DeserializeOwned>(
+		value: JsValue,
+	) -> Result<BTreeMap<String, T>, JsValue> {
+		if value.is_undefined() || value.is_null() {
+			return Ok(BTreeMap::new());
+		}
+		serde_wasm_bindgen::from_value(value).map_err(to_js_error)
 	}
 
 	#[derive(serde::Serialize)]
@@ -422,6 +442,8 @@ mod messages {
 	struct InterpolationResult {
 		value: String,
 		missing: Vec<String>,
+		not_numeric: Vec<String>,
+		unmatched: Vec<String>,
 	}
 
 	/// Parse a rich message into a node tree for the React layer to render.

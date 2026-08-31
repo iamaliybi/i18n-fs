@@ -37,7 +37,10 @@ pub use locale::{negotiate, LanguageTag, MatchKind, Negotiated};
 pub use routing::{canonical_public_path, decide, Action, Decision, LocaleSource, RequestInfo};
 
 #[cfg(feature = "full")]
-pub use format::{flatten, interpolate, tokenize, Interpolation, Node};
+pub use format::{
+	flatten, flatten_with, interpolate, interpolate_with, tokenize, Arm, Interpolation, Node,
+	PluralArg,
+};
 /// The JSON value type used by [`store::MessageStore::from_value`].
 ///
 /// Re-exported because it appears in that public signature: without it, callers

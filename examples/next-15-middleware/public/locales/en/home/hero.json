@@ -1,1 +1,1 @@
-{"hero":{"title":"Welcome","bullets":["Fast","Small"],"cta":{"label":"Get started"}},"terms":"Please read the <link>terms</link>"}
+{"hero": {"title": "Welcome", "bullets": ["Fast", "Small"], "cta": {"label": "Get started"}, "files": "{count, plural, =0 {No files yet} one {# file} other {# files}}", "place": "{n, selectordinal, one {#st} two {#nd} few {#rd} other {#th}}"}, "terms": "Please read the <link>terms</link>"}

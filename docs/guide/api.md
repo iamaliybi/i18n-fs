@@ -27,6 +27,8 @@ ErrorCode.ScopeNotFound      // 200
 ErrorCode.KeyNotFound        // 201
 ErrorCode.TypeMismatch       // 202
 ErrorCode.ParamMissing       // 300
+ErrorCode.PluralNotNumeric   // 301
+ErrorCode.NoMatchingArm      // 302
 ErrorCode.InvalidConfig      // 400
 ```
 
@@ -79,6 +81,28 @@ the server, not the proxy.
 A translator for the request's locale. Reads the file with `fs` and caches it
 per process; in development the file's timestamp is checked first, so an edit
 shows up on the next render. See [translating](./translating.md).
+
+### `getFormatter(): Promise<Formatter>`
+
+Dates, numbers, money, durations and lists in the request's locale. All of it is
+`Intl`, so none of it is downloaded and none of it enters the WebAssembly
+binary. See [plurals and formatting](./plurals-and-formatting.md).
+
+```ts
+const format = await getFormatter();
+
+format.number(value, options?);                 // Intl.NumberFormat
+format.dateTime(value, options?);               // Intl.DateTimeFormat
+format.dateTimeRange(from, to, options?);       // …formatRange
+format.relativeTime(value, { now?, unit?, … }); // Intl.RelativeTimeFormat
+format.list(values, options?);                  // Intl.ListFormat
+format.compare(left, right, options?);          // Intl.Collator
+format.locale;                                  // what it was built for
+```
+
+The unit for `relativeTime` is chosen by size unless named, and it measures
+against `Date.now()` unless given a `now` — pass one when the same value is
+rendered on the server and hydrated in the browser, or the two disagree.
 
 ### `getLocale(): Promise<string>`
 
@@ -164,6 +188,11 @@ the namespace. Once per page, so only the first one needs the boundary.
 
 The result of a fetch, including a failed one, is kept until the page is
 reloaded.
+
+### `useFormatter(): Formatter`
+
+The same formatter as `getFormatter`, synchronously, for the active locale.
+Memoised on the locale, and it pulls in no WebAssembly.
 
 ### `usePrefetch(): (...namespaces: string[]) => void`
 

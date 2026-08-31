@@ -73,6 +73,7 @@ const EXPECTED = [
 	'getTranslation', 'getLocale', 'getResolvedLocale', 'setRequestLocale',
 	'I18nProvider', 'configureI18n', 'getPathname', 'permanentRedirect',
 	'useTranslation', 'useLocale', 'useI18nContext', 'usePrefetch',
+	'getFormatter', 'useFormatter', 'createFormatter', 'Formatter',
 	'Link', 'useRouter', 'usePathname', 'useLocaleSwitcher',
 	'createI18nProxy', 'createI18nMiddleware', 'I18nProxyHandler',
 	'LOCALE_HEADER', 'RESOLVED_HEADER', 'RECOMMENDED_MATCHER',
@@ -122,6 +123,8 @@ const NAMES = {
 	KeyNotFound: 'KEY_NOT_FOUND',
 	TypeMismatch: 'TYPE_MISMATCH',
 	ParamMissing: 'PARAM_MISSING',
+	PluralNotNumeric: 'PLURAL_NOT_NUMERIC',
+	NoMatchingArm: 'NO_MATCHING_ARM',
 	InvalidConfig: 'INVALID_CONFIG',
 };
 

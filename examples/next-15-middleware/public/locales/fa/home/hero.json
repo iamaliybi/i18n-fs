@@ -1,1 +1,1 @@
-{"hero":{"title":"خوش آمدید","bullets":["سریع","کوچک"],"cta":{"label":"شروع کنید"}},"terms":"لطفاً <link>شرایط</link> را بخوانید"}
+{"hero": {"title": "خوش آمدید", "bullets": ["سریع", "کوچک"], "cta": {"label": "شروع کنید"}, "files": "{count, plural, =0 {هنوز فایلی نیست} other {# فایل}}", "place": "{n, selectordinal, other {#م}}"}, "terms": "لطفاً <link>شرایط</link> را بخوانید"}

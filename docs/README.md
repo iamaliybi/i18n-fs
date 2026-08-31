@@ -10,6 +10,7 @@ so you can start at the top and keep going. Every page also links back here.
 | [Getting started](guide/getting-started.md) | nothing to a translated page, in nine steps |
 | [Folder structure](guide/folder-structure.md) | what is required, what is yours, and why `[locale]` is not optional |
 | [Translating](guide/translating.md) | `t`, `t.array`, `t.rich`, `t.has`, `t.raw` |
+| [Plurals and formatting](guide/plurals-and-formatting.md) | `plural`, `selectordinal`, `select`, and the `Intl` formatters |
 | [Routing](guide/routing.md) | strategies, prefixes, navigation, switching language |
 | [The proxy](guide/proxy.md) | setup, the matcher, composing, Next.js 16 |
 | [The CLI](guide/cli.md) | `check`, `build`, CI |
@@ -35,3 +36,4 @@ first:
 | [0008](adr/0008-client-layer.md) | suspension, and why the promise cache is module-scoped |
 | [0009](adr/0009-middleware-and-navigation.md) | the proxy, navigation, and where the WASM actually loads |
 | [0010](adr/0010-package-manager.md) | npm workspaces, not pnpm |
+| [0011](adr/0011-plurals-and-formatting.md) | plurals in the message, CLDR in the runtime |

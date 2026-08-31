@@ -29,7 +29,7 @@ and the build-time CLI — and what makes the loop guarantee testable.
 | `routing` | always        | canonicalisation and the middleware decision        |
 | `error`   | always        | the error taxonomy                                  |
 | `store`   | `full`        | namespace flattening, `scope`/`key` resolution      |
-| `format`  | `full`        | interpolation and rich-text tokenisation            |
+| `format`  | `full`        | interpolation, plural selection, rich-text tokenising |
 
 `diagnostics` (implied by `full`) adds config validation and human-readable
 error rendering. The Edge build has none of it. `cli` adds namespace
@@ -118,6 +118,20 @@ only a fresh request re-runs them.
 Building a link has to be synchronous, so `src/paths.ts` mirrors two small
 functions from the Rust core in TypeScript. `test/paths.test.ts` checks that
 mirror against the original across every configuration, so the two cannot drift.
+
+Selecting a plural arm is mirrored for a different reason. `t` renders inside
+the core, but `t.rich` cannot: a rich parameter may be a React element, and an
+element cannot cross the WebAssembly boundary. So `chooseArm` in
+`src/translator.ts` repeats the rule that `pick` implements in `format.rs`, and
+`test/plural.test.tsx` renders the same messages through both and asserts they
+agree — the same arrangement, and the same reason for it. The core has its own
+copy of the problem, since `interpolate` and `tokenize` are two parsers over one
+grammar, and the `both_renderers_agree` property holds those two together over
+several thousand generated templates per run.
+
+The plural *categories* are not mirrored anywhere. They come from
+`Intl.PluralRules`, which every target runtime already ships
+([ADR 0011](./adr/0011-plurals-and-formatting.md)).
 
 ## Request lifecycle
 
