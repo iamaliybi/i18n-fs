@@ -22,6 +22,7 @@ import {
 	silenceTypelessPackageWarning,
 } from './config.js';
 import { scan } from './scan.js';
+import type { ResolvedI18nFsConfig } from '../config.js';
 
 interface Options {
 	command: 'check' | 'build' | 'help';
@@ -29,6 +30,8 @@ interface Options {
 	config?: string;
 	out?: string;
 	strict: boolean;
+	/** `--compare-locales` / `--no-compare-locales`, overriding the config. */
+	compareLocales?: boolean;
 	json: boolean;
 }
 
@@ -43,6 +46,10 @@ Options:
   --config <file>   Config file, relative to --cwd (default: i18n-fs.config.ts)
   --out <dir>       Output directory for build (default: .i18n-fs)
   --strict          Treat warnings as errors
+  --compare-locales     Compare every locale against the default one, whatever
+                        the config says. Use it to audit a project that has
+                        compareLocales turned off.
+  --no-compare-locales  Skip that comparison for this run.
   --json            Emit findings as JSON
   -h, --help        Show this message
 
@@ -77,6 +84,14 @@ function parse(argv: string[]): Options {
 			case '--help':
 				options.command = 'help';
 				break;
+			case '--compare-locales':
+				options.compareLocales = true;
+				break;
+
+			case '--no-compare-locales':
+				options.compareLocales = false;
+				break;
+
 			case '--strict':
 				options.strict = true;
 				break;
@@ -146,7 +161,17 @@ async function run(options: Options): Promise<number> {
 		return 1;
 	}
 
-	const config = resolveConfig(await loadConfig(configPath));
+	const loaded = resolveConfig(await loadConfig(configPath));
+
+	// The flag overrides the configured value for the whole run rather than for
+	// the comparison alone. The registry's shape is derived from this setting —
+	// merged when locales are not compared, the default locale's when they are —
+	// so overriding only the check would report against one set of rules and
+	// generate against another.
+	const config: ResolvedI18nFsConfig =
+		options.compareLocales === undefined
+			? loaded
+			: { ...loaded, compareLocales: options.compareLocales };
 	const core = await loadCliCore();
 	const scanned = await scan(options.cwd, config);
 	const { findings, parsed } = check(core, config, scanned);
@@ -173,11 +198,20 @@ async function run(options: Options): Promise<number> {
 		entries: item.entries,
 	}));
 
+	// Scopes follow the same rule as keys: the default locale's when the locales
+	// are compared, the union of all of them when they are not. Taking only the
+	// default locale's here would have left a scope that exists solely in
+	// another language untyped, which is the same defect the merged registry
+	// exists to avoid.
 	const scopes = new Map<string, string[]>();
 	for (const item of parsed) {
-		if (item.file.locale === config.defaultLocale) {
-			scopes.set(item.file.namespace, item.scopes);
-		}
+		if (config.compareLocales && item.file.locale !== config.defaultLocale) continue;
+
+		const existing = scopes.get(item.file.namespace);
+		scopes.set(
+			item.file.namespace,
+			existing ? [...new Set([...existing, ...item.scopes])].sort() : item.scopes,
+		);
 	}
 
 	const dir = outputDir(options.cwd, options.out);

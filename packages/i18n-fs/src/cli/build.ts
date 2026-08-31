@@ -64,20 +64,35 @@ function union(values: string[]): string {
 }
 
 /**
- * The typed key registry, generated from the default locale.
+ * The typed key registry.
  *
- * The default locale is the single source of truth for what keys exist; `check`
- * is what guarantees the other locales match it. Generating from the union of
- * all locales would type keys that are missing where they are used.
+ * Normally generated from the default locale alone: it is the single source of
+ * truth for what keys exist, and `check` is what guarantees the others match
+ * it. Generating from the union would then type keys that are missing where
+ * they are used.
+ *
+ * `compareLocales: false` withdraws that guarantee, so the registry has to stop
+ * relying on it. There the union is what is true — these keys exist in some
+ * locale — and it is the only version that compiles: a project whose German
+ * tree has keys the English one does not would otherwise get a type error on
+ * every one of them, which would make the option useless to the projects it
+ * exists for.
+ *
+ * The trade is stated rather than hidden. With the union, a key present only in
+ * German compiles on a page rendered in English, and falls back at runtime the
+ * way any missing key does — reported with `KEY_NOT_FOUND`, never filled in
+ * from another language.
  */
 export function buildTypes(
 	config: ResolvedI18nFsConfig,
 	namespaces: NamespaceKeys[],
 	scopesByNamespace: Map<string, string[]>,
 ): string {
-	const source = namespaces
-		.filter((item) => item.locale === config.defaultLocale)
-		.sort((a, b) => a.namespace.localeCompare(b.namespace));
+	const source = config.compareLocales
+		? namespaces
+				.filter((item) => item.locale === config.defaultLocale)
+				.sort((a, b) => a.namespace.localeCompare(b.namespace))
+		: mergeLocales(namespaces);
 
 	/**
 	 * Whether a path sits inside a list.
@@ -102,7 +117,9 @@ export function buildTypes(
 		"declare module 'i18n-fs' {",
 		'\t/**',
 		'\t * Every namespace, the scopes inside it, and the keys reachable from',
-		'\t * each scope. Generated from the default locale.',
+		`\t * each scope. Generated from ${
+			config.compareLocales ? 'the default locale' : 'every locale, merged'
+		}.`,
 		'\t */',
 		'\tinterface MessageRegistry {',
 	];
@@ -145,6 +162,38 @@ export function buildTypes(
 	lines.push('\t}', '}', '');
 
 	return lines.join('\n');
+}
+
+/**
+ * One entry per namespace, holding every key any locale defines for it.
+ *
+ * Used only when locales are not compared. A key of the same name has to have
+ * one shape, so the first locale to define it wins and later disagreements are
+ * left alone — with comparison off, nothing has established which of the two is
+ * correct, and inventing an answer here would be worse than typing it as
+ * whichever came first. `check --compare-locales` is how to find them.
+ */
+function mergeLocales(namespaces: NamespaceKeys[]): NamespaceKeys[] {
+	const merged = new Map<string, NamespaceKeys>();
+
+	// Sorted first, so "the first locale to define it" is a property of the
+	// data rather than of the order the filesystem happened to be walked in.
+	for (const item of [...namespaces].sort(
+		(a, b) => a.namespace.localeCompare(b.namespace) || a.locale.localeCompare(b.locale),
+	)) {
+		const existing = merged.get(item.namespace);
+
+		if (!existing) {
+			merged.set(item.namespace, { ...item, entries: new Map(item.entries) });
+			continue;
+		}
+
+		for (const [key, kind] of item.entries) {
+			if (!existing.entries.has(key)) existing.entries.set(key, kind);
+		}
+	}
+
+	return [...merged.values()];
 }
 
 /** The resolved configuration, as an ES module every runtime can import. */

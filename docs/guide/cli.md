@@ -47,6 +47,43 @@ every other locale has to match. That is also where the generated types come
 from — generating from the union of all locales would type keys that are missing
 exactly where they are used.
 
+### When the locales are not translations of one another
+
+The comparison assumes every locale says the same things in different words.
+Sometimes that is false by design: a site whose German pages are written for a
+German audience, not translated from the English ones, has different keys and
+there is nothing wrong with it.
+
+```ts
+export default defineConfig({
+	locales: ['en', 'de'],
+	defaultLocale: 'en',
+	compareLocales: false,
+});
+```
+
+With it off, no comparison between locales is reported at all — not as an error
+and not as a warning. Everything that is a statement about a single file still
+is: malformed JSON, an empty namespace, a directory for a locale that is not
+configured.
+
+It also changes what `build` generates. With the comparison on, the typed
+registry comes from the default locale, because `check` is what guarantees the
+others match it. With it off there is no such guarantee, so the registry is the
+**union of every locale** — otherwise a key that exists only in German would not
+compile, which would make the option useless to the projects that need it.
+
+The trade is worth stating plainly: under the union, a key present only in
+German type-checks on a page rendered in English. At runtime it falls back the
+way any missing key does — the developer's string or the key itself, reported as
+`KEY_NOT_FOUND`, never filled in from another language.
+
+To see the differences once without changing the file:
+
+```bash
+npx i18n-fs check --compare-locales
+```
+
 ## `build`
 
 Runs the same checks, then writes:
@@ -80,6 +117,8 @@ simply are not immutably cacheable.
 | `--config <file>` | config file, relative to `--cwd` |
 | `--out <dir>` | output directory for `build` (default: `.i18n-fs`) |
 | `--strict` | treat warnings as errors |
+| `--compare-locales` | compare the locales whatever the config says |
+| `--no-compare-locales` | skip that comparison for this run |
 | `--json` | emit findings as JSON |
 | `-h`, `--help` | usage |
 

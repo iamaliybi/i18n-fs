@@ -295,6 +295,7 @@ CLI, where every problem can be reported at once against the real file.
 | `domains` | `[]` | required for the `domain` strategy |
 | `cookie` | see below | `name`, `maxAge`, `sameSite`, `path`, `secure` |
 | `messagesDir` | `'locales'` | directory under `public/` |
+| `compareLocales` | `true` | require every locale to define the same keys ([why you might not](./cli.md#when-the-locales-are-not-translations-of-one-another)) |
 | `debug` | `NODE_ENV !== 'production'` | emit diagnostics |
 
 Cookie defaults: `I18N_FS_LOCALE`, one year, `lax`, `/`, `secure`.

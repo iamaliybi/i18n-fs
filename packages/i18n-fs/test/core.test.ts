@@ -21,6 +21,7 @@ const config: ResolvedI18nFsConfig = {
 	domains: [],
 	cookie: { ...CONFIG_DEFAULTS.cookie },
 	messagesDir: 'locales',
+	compareLocales: true,
 	debug: true,
 };
 

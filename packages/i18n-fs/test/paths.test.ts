@@ -30,6 +30,7 @@ function config(strategy: RoutingStrategy, prefix: PrefixMode, defaultLocale: st
 		],
 		cookie: { name: 'I18N_FS_LOCALE', maxAge: 1, sameSite: 'lax' as const, path: '/', secure: true },
 		messagesDir: 'locales',
+		compareLocales: true,
 		debug: false,
 	} satisfies ResolvedI18nFsConfig;
 }

@@ -124,6 +124,7 @@ export function resolveConfig(config: I18nFsConfig): ResolvedI18nFsConfig {
 			secure: config.cookie?.secure ?? CONFIG_DEFAULTS.cookie.secure,
 		},
 		messagesDir: config.messagesDir ?? CONFIG_DEFAULTS.messagesDir,
+		compareLocales: config.compareLocales ?? CONFIG_DEFAULTS.compareLocales,
 		debug: config.debug ?? process.env.NODE_ENV !== 'production',
 	};
 }

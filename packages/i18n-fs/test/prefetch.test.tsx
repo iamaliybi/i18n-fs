@@ -29,6 +29,7 @@ const CONFIG: ResolvedI18nFsConfig = {
 	domains: [],
 	cookie: { name: 'I18N_FS_LOCALE', maxAge: 1, sameSite: 'lax', path: '/', secure: true },
 	messagesDir: 'locales',
+	compareLocales: true,
 	debug: false,
 };
 
